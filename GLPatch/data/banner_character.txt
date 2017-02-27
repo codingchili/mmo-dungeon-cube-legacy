@@ -1,0 +1,5 @@
+You may combine spells/abilities from different types of your selected profession in any way you like.
+Learning spells of one type does not limit your spellcasting, selecting more spells of a single type will 
+later unlock a stronger ability that defines your playstyle.
+
+   At higher levels every profession is eligible to learn low-tier abilities from another profession.

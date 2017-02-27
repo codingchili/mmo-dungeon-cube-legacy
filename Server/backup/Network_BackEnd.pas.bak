@@ -1,0 +1,165 @@
+unit Network_BackEnd;
+
+// backend server, runs on the master client the worldservers
+// will connect to this and get fed accountlist and updates to it.
+// synchronizes states from master to worldserver.
+
+interface
+
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+
+uses SysUtils, IdTCPServer, IdSocketHandle, IdContext, IdGlobal,
+    Engine_Accounts, Classes;
+
+// call initialize if master.
+procedure Initialize;
+
+type
+    TBackServer = class
+    protected
+        class procedure OnRead(AContext: TIdContext);
+        class procedure OnDisconnect(AContext: TIdContext);
+        class procedure OnConnect(AContext: TIdContext);
+    public
+        procedure Synchronize(account: TAccount; ip: string; sessid: string = '');
+        constructor create;
+    private
+        server: TIdTCPServer;
+    end;
+
+const
+    port = 1596;
+
+var
+    BackEnd: TBackServer;
+
+implementation
+
+uses Conf_Serverlist, System_Log, Conf_Protocol, System_Token;
+
+procedure TBackServer.Synchronize(account: TAccount; ip: string; sessid: string = '');
+var
+    packet: TPacket;
+    i: integer;
+    list: TList;
+begin
+    packet := TPacket.create;
+    packet.types := TPackType.account;
+    packet.action := TAction.Update;
+
+    if sessid = '' then
+        sessid := TTokenManager.generate;
+
+    list := server.Contexts.LockList;
+    try
+        for i := 0 to (list.Count) - 1 do
+            if (TIdContext(list[i]).data) <> NIL then
+            begin
+                packet.Add(inttostr(account.id));
+                packet.Add(sessid);
+                packet.Add(ip);
+
+                TIdContext(list[i]).Connection.Socket.Write(packet.packetize);
+            end;
+    finally
+        server.Contexts.UnlockList;
+    end;
+
+    packet.free;
+end;
+
+constructor TBackServer.create;
+begin
+    server := TIdTCPServer.create();
+    server.OnExecute := self.OnRead;
+    server.OnDisconnect := self.OnDisconnect;
+    server.OnConnect := self.OnConnect;
+
+    with server.Bindings.Add do
+    begin
+        IPVersion := Id_IPv4;
+        port := Network_BackEnd.port;
+        ip := '';
+    end;
+    try
+        server.Active := true;
+    except
+        print('Failed to start BackEnd Service.', System_Log.Red);
+        halt;
+    end;
+end;
+
+// packet handler
+class procedure TBackServer.OnRead(AContext: TIdContext);
+var
+    packet: TPacket;
+    data: TIdBytes;
+    len: word;
+begin
+    packet := TPacket.create;
+    try
+        packet.ip := AContext.Connection.Socket.Binding.PeerIP;
+        packet.port := AContext.Connection.Socket.Binding.PeerPort;
+
+        // get message length
+        AContext.Connection.Socket.ReadBytes(data, 2);
+        Move(data[0], len, SizeOf(len));
+
+        // verify packet size.
+        if (len > Conf_Protocol.MAXBYTES) or (len < 0) then
+        begin
+            // drop all bytes in buffer.
+            AContext.Connection.Socket.InputBuffer.Clear;
+           // AContext.Connection.Socket.DiscardAll;
+        end
+        else
+        begin
+
+            // reset buffer
+            SetLength(data, 0);
+
+            // get message
+            AContext.Connection.Socket.ReadBytes(data, len);
+
+            // parse and unpack
+            packet.unpacketize(BytesToString(data, TEncoding.UTF8));
+
+            if (AContext.data) = NIL then
+                AContext.data := Conf_Serverlist.ServerList.ValidateWorldKey(packet.sessid, packet.ip);
+
+            if (AContext.data) <> NIL then
+            begin
+                case (packet.types) of
+                    TPackType.ServerList:
+                        if (packet.action = TAction.Update) then
+                            Conf_Serverlist.ServerList.Update(packet, AContext);
+                end;
+            end;
+        end;
+    finally
+        packet.free;
+    end;
+end;
+
+// disconnect handler
+class procedure TBackServer.OnDisconnect(AContext: TIdContext);
+begin
+    if AContext.data <> NIL then
+        Conf_Serverlist.ServerList.Disconnection(AContext.data);
+    AContext.data := NIL;
+end;
+
+// connect handler
+class procedure TBackServer.OnConnect(AContext: TIdContext);
+begin
+    AContext.data := NIL;
+end;
+
+procedure Initialize;
+begin
+    BackEnd := TBackServer.create;
+end;
+
+end.

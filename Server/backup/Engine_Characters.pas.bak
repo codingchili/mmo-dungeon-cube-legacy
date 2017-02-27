@@ -1,0 +1,246 @@
+unit Engine_Characters;
+
+interface
+
+{ LEVEL - EXPERIENCE REQUIRED
+  1 = 13
+  2 = 18
+  3 = 37
+  4 = 74
+  5 = 135
+  6 = 226
+  7 = 353
+  8 = 522
+  9 = 739
+  10 = 1010
+  15 = 3385
+  20 = 8010
+  25 = 15635
+  30 = 27010
+  40 = 64010
+  50 = 125010
+  60 = 216010
+  80 = 512010
+  90 = 729010
+  100 = 1.000.010 }
+
+uses Conf_Protocol, SysUtils, System_Log, IdContext, System_idgen, SyncObjs{, Windows};
+
+type
+  TCharacterList = array [0 .. Integer(High(TProfession))] of Pointer;
+
+  type
+    TPoint = Record
+      X: integer;
+      Y: integer;
+    end;
+
+type
+  TCharacter = Record
+    aID: Integer;
+    sessid: string[SESSID_LENGTH];
+    user: string[USERNAME_MAXLEN];
+    pass: string[PASSWORD_MAXLEN];
+    name, map: string[16];
+    profession: TProfession;
+    waypoint: Tpoint;
+    movementtype: TMovementType;
+    update, alive: boolean;
+    ip: string[16];
+    Sock: TIdContext;
+    x, y, hp, energy, speed: single;
+    attrpts, skillpts, exp, nexp, dir: Integer;
+    level, hpmax, energymax, port, ap, sp, pr, mr: Integer;
+    equipped: array [0 .. 9] of Integer;
+    inventory: array [0 .. 42] of Integer;
+    INT, STR, WIS, CON, DEX, SPR: Integer;
+  End;
+
+type
+  TCharacterDB = class
+  public
+    nextid, charlen: Integer;
+    char: array [0 .. 15000] of TCharacter;
+    temporary: boolean;
+    cs: TCriticalSection;
+    procedure Load();
+    procedure Save();
+    procedure Add(Character: TCharacter);
+    function new(aID: Integer; name: string; profession: TProfession; Context: TIdContext): Pointer;
+    function Character(aID: Integer; profession: TProfession; var Character: Pointer): boolean;
+    procedure CharacterList(aID: Integer; var CharacterList: TCharacterList);
+    constructor Create(temp: boolean);
+  end;
+
+var
+  CharDB: TCharacterDB;
+
+implementation
+
+uses Conf_WorldServer;
+
+procedure TCharacterDB.CharacterList(aID: Integer; var CharacterList: TCharacterList);
+var
+  i: Integer;
+begin
+  for i := 0 to high(CharacterList) do
+    CharacterList[i] := NIL;
+
+  cs.Acquire;
+  try
+    for i := 0 to charlen - 1 do
+    begin
+      if (char[i].aID = aID) then
+      begin
+        CharacterList[Ord(char[i].profession)] := @char[i];
+      end;
+    end;
+  finally
+    cs.Release;
+  end;
+end;
+
+function TCharacterDB.Character(aID: Integer; profession: TProfession; var Character: Pointer): boolean;
+var
+  i: Integer;
+begin
+  Character := NIL;
+  cs.Acquire;
+  try
+    result := false;
+
+    for i := 0 to charlen - 1 do
+    begin
+      if (char[i].aID = aID) and (char[i].profession = profession) then
+      begin
+        Character := @char[i];
+        result := true;
+      end;
+    end;
+  finally
+    cs.Release;
+  end;
+end;
+
+procedure TCharacterDB.Add(Character: TCharacter);
+begin
+  // use for map travel
+end;
+
+function TCharacterDB.new(aID: Integer; name: string; profession: TProfession; Context: TIdContext): Pointer;
+var
+  Character: ^TCharacter;
+begin
+  cs.Acquire;
+  try
+    Character := @char[charlen];
+    inc(charlen);
+
+    Character^.alive := false;
+    Character^.aID := aID;
+    Character^.name := name;
+    Character^.profession := profession;
+    Character^.map := StartingTown(profession);
+    Character^.Sock := Context;
+    Character^.x := 1350; // find map starting point here from config files.
+    Character^.y := 675;
+    Character^.level := 1;
+    Character^.CON := 5;
+    Character^.INT := 5;
+    Character^.WIS := 5;
+    Character^.DEX := 5;
+    Character^.SPR := 5;
+    Character^.STR := 5;
+    Character^.hpmax := Character^.CON * 10 + Character^.level * 20 + 30;
+    Character^.energymax := 200;
+    Character^.speed := 2.6;
+    Character^.movementtype := TMovementType.stopped;
+    Character^.energy := 0;
+    Character^.hp := Character^.hpmax;
+    Character^.exp := 0;
+    Character^.nexp := (Character^.level * Character^.level * Character^.level) * 10; // lv100 = 1000 millions
+    Character^.attrpts := round((Character^.level / 5) + Character^.level * 5);
+    Character^.skillpts := Character^.level * 5;
+
+    Character^.ap := Character.STR * 2 + Character.DEX * 1;
+    Character^.sp := Character.INT * 4;
+    Character^.mr := Character.CON * 1 + Character.SPR * 1;
+    Character^.pr := Character.CON * 1 + Character.DEX * 1;
+
+    result := @char[charlen];
+  finally
+    cs.Release;
+  end;
+end;
+
+constructor TCharacterDB.Create(temp: boolean);
+var
+  db: File of TCharacter;
+begin
+  cs := TCriticalSection.Create;
+  charlen := 0;
+
+  if fileexists('data/character.data') and (temp = false) then
+  begin
+    temporary := false;
+    assignFile(db, 'data/character.data');
+    reset(db);
+
+    while not(eof(db)) do
+    begin
+      read(db, char[charlen]);
+      inc(charlen);
+    end;
+    closefile(db);
+  end;
+end;
+
+procedure TCharacterDB.Load();
+var
+  savefile: file of TCharacter;
+begin
+  print('Reading Char Data..', Brown);
+  charlen := 0;
+
+  if not(fileexists('data/character.data')) then
+  begin
+    print(#9 + ' No Data.', LightRed, false);
+    exit;
+  end;
+
+  assignFile(savefile, 'data/' + 'character.data');
+  reset(savefile);
+
+  while not eof(savefile) do
+  begin
+    read(savefile, char[charlen]);
+    inc(charlen);
+  end;
+
+  closefile(savefile);
+  print(#9 + ' Done.', LightGreen, false);
+end;
+
+procedure TCharacterDB.Save();
+var
+  db: file of TCharacter;
+  i: Integer;
+begin
+  print('Writing data..');
+  if not temporary then
+  begin
+
+    assignFile(db, 'data/character.data');
+    rewrite(db);
+
+    for i := 0 to charlen - 1 do
+    begin
+      write(db, char[i]);
+    end;
+    closefile(db);
+    print(#9 + ' Done.', System_Log.LightGreen, false);
+    print('');
+  end;
+end;
+
+end.

@@ -1,0 +1,32 @@
+The use of this software is subject to the following terms of use:
+
+This software and services is subject to change without notice.
+
+This software uses logs to monitor your actions against the server. 
+All information sent to the server will be stored. This includes, 
+but is not limited to Your IP Address, Chat Logs, Account username 
+and Password, Character names and all data generated on the Server
+or Client software. 
+
+Neither we nor any third parties provide any warranty or guarantee as 
+to the accuracy, timeliness, performance, completeness or suitability 
+of the service and service for any particular purpose.You acknowledge 
+that the software and services may contain inaccuracies or errors 
+and we expressly exclude liability for any such inaccuracies or errors 
+to the fullest extent permitted by law.
+
+Your use of any information or materials in this software is entirely 
+at your own risk, for which we shall not be liable. It shall be your 
+own responsibility to ensure that any products, services or information 
+available through this software meet your specific requirements.
+
+This software contains material which is owned by or licensed to us. 
+This material includes, but is not limited to, appearance, graphics, 
+software, servers. Reproduction is prohibited other than in accordance 
+with the copyright notice, which forms part of these terms and conditions.
+
+All trade marks reproduced in this software which are not the property 
+of, or licensed to, the operator are acknowledged on the software.
+
+Unauthorized use of this software may give rise to a claim for damages 
+and/or be a criminal offence.

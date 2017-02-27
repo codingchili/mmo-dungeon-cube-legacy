@@ -1,0 +1,36 @@
+This patch is unofficial and for developers and beta testers only. 
+
+Patch Date: 2014-01-18. 
+
+- Client Updates
+        ~ Rewrote patching systems.
+	~ Added Player/NPC Targeting.
+	~ ... More to be listed.
+
+- Server Updates
+        ~ Rewrote patching systems.
+	~ Added NPCs that chase the nearest player.
+	~ Updated for compliance with NAT.
+	~ ... More to be listed.
+
+ 
+This patch is unofficial and for developers and beta testers only.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

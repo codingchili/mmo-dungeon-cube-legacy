@@ -1,0 +1,153 @@
+unit Network_MetaServer;
+
+// packet switching to lobby, patcher and Maps[]
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+
+interface
+
+uses Classes, IdTCPServer, IdSocketHandle, SysUtils, System_Log, IdContext,
+  Engine_Accounts, Conf_Protocol, SyncObjs,
+  System_UtilExt, Conf_Patching, System_Licensing, IdGlobal;
+
+const
+  port = 1556;
+
+type
+  TNetGenie = class
+  public
+    server: TidTCPServer;
+    constructor create;
+    class procedure OnConnect(AContext: TIdContext);
+    class procedure OnRead(AContext: TIdContext);
+    class procedure OnDisconnect(AContext: TIdContext);
+  end;
+
+procedure initialize;
+
+var
+  Network: TNetGenie;
+
+implementation
+
+uses Network_Patching, Conf_ServerList;
+
+constructor TNetGenie.create;
+begin
+  server := TidTCPServer.create();
+
+  server.ReuseSocket := rsTrue;
+
+  with server.bindings.add do
+  begin
+    IPVersion := ID_Ipv4;
+    ip := '';
+    port := Network_MetaServer.port;
+  end;
+
+  server.OnExecute := self.OnRead;
+  server.OnDisconnect := self.OnDisconnect;
+  server.OnConnect := self.OnConnect;
+{$IFDEF Win32}
+  server.UseNagle := false;
+{$ENDIF}
+  server.Active := true;
+end;
+
+procedure pingpacket(var packet: TPacket; var AContext: TIdContext);
+begin
+  packet.types := TPackType.ping;
+  packet.action := TAction.None;
+
+  print('M-Ping From [' + AContext.Connection.Socket.Binding.PeerIP + '].', Cyan);
+  AContext.Connection.Socket.write(packet.packetize);
+end;
+
+class procedure TNetGenie.OnConnect(AContext: TIdContext);
+begin
+  AContext.Connection.Socket.RecvBufferSize := 512;
+  AContext.Data := TSession.create;
+  TSession(AContext.Data).authenticated := false;
+end;
+
+class procedure TNetGenie.OnDisconnect(AContext: TIdContext);
+begin
+  { for i := 0 to high(Serverlist.servers) do
+    if (AContext = Serverlist.servers[i].context) then
+    begin
+    Serverlist.servers[i].online := false;
+    print('Link Broken With ' + Serverlist.servers[i].name + '!',
+    System_Log.LightGray);
+    end; }
+
+  // print('Disconnected Client ' + AContext.Binding.PeerIP);
+end;
+
+class procedure TNetGenie.OnRead(AContext: TIdContext);
+var
+  packet: TPacket;
+  Data: TIdBytes;
+  len: word;
+begin
+  packet := TPacket.create;
+  try
+    packet.ip := AContext.Connection.Socket.Binding.PeerIP;
+    packet.port := AContext.Connection.Socket.Binding.PeerPort;
+
+    // get message length
+    AContext.Connection.Socket.ReadBytes(Data, 2);
+    Move(Data[0], len, SizeOf(len));
+
+    // verify packet size.
+    if (len > Conf_Protocol.MAXBYTES) or (len < 0) then
+    begin
+      // drop all bytes in buffer.
+      AContext.Connection.Socket.InputBuffer.Clear;
+     // AContext.Connection.Socket.DiscardAll;
+    end
+    else
+    begin
+
+      // reset buffer
+      SetLength(Data, 0);
+
+      // get message
+      AContext.Connection.Socket.ReadBytes(Data, len);
+
+      // parse and unpack
+      packet.unpacketize(BytesToString(Data, TEncoding.UTF8));
+
+      case (packet.types) of
+        ping:
+          pingpacket(packet, AContext);
+        TPackType.Serverlist:
+          if (packet.action = TAction.Info) then
+            Serverlist.Send(AContext);
+        TPackType.Login:
+          case (packet.action) of
+            TAction.None:
+              AccountDB.Login(packet, AContext, packet.param(0), packet.param(1));
+            TAction.Registered:
+              AccountDB.Registration(packet, AContext);
+          end;
+      end;
+    end;
+
+  finally
+    packet.free;
+  end;
+end;
+
+procedure initialize;
+begin
+  print('Opening inbound Pipe..', Brown);
+  try
+    Network := TNetGenie.create;
+    print(#9 + ' Done. [:' + inttostr(port) + ']', lightgreen, false);
+  except
+    print(#9 + ' Failed.', LightRed, false);
+  end;
+end;
+
+end.

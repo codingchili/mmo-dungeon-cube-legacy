@@ -1,0 +1,7 @@
+remake accounts -> linked list fast login, point account to accountlist somehow?
+2bytes ?
+
+EncryptDB -> generate (maxuser) amount of keys on startup, never resuse a key xd
+CHARSESSION -> GET FROM TokenDB!
+
+Accounts/Characters should be TList'ed!

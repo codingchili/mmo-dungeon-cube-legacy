@@ -1,0 +1,103 @@
+unit System_UtilExt;
+
+interface
+
+uses Classes, SysUtils, System_Log;
+
+var
+  files: array of string;
+
+procedure Split(Delimiter: Char; Str: string; ListOfStrings: TStrings; preservespace: boolean = false);
+procedure GetFiles(Path, extension: string; search: integer = faAnyFile);
+function SafeFloat(pText: string): double;
+function FileSize(fileName: wideString): Int64;
+procedure initialize;
+
+implementation
+
+procedure initialize;
+begin
+  print('Checking Files..', Brown);
+
+  if not(DirectoryExists('data')) then
+    mkdir('data');
+  if not(DirectoryExists('conf')) then
+    mkdir('conf');
+  print(#9 + ' Done.', LightGreen, false);
+end;
+
+procedure Split(Delimiter: Char; Str: string; ListOfStrings: TStrings; preservespace: boolean = false);
+var
+  i: integer;
+begin
+  if preservespace then
+    Str := StringReplace(Str, ' ', '¤', [rfReplaceAll, rfIgnoreCase]);
+
+  ListOfStrings.Clear;
+  ListOfStrings.Delimiter := Delimiter;
+  ListOfStrings.DelimitedText := Str;
+
+  if preservespace then
+    for i := 0 to ListOfStrings.Count - 1 do
+      ListOfStrings[i] := StringReplace(ListOfStrings[i], '¤', ' ', [rfReplaceAll, rfIgnoreCase]);
+end;
+
+function FileSize(fileName: wideString): Int64;
+var
+  sr: TSearchRec;
+begin
+  if FindFirst(fileName, faAnyFile, sr) = 0 then
+    result := Int64(sr.FindData.nFileSizeHigh) shl Int64(32) + Int64(sr.FindData.nFileSizeLow)
+  else
+    result := -1;
+
+  FindClose(sr);
+end;
+
+function SafeFloat(pText: string): double;
+var
+  is_euro: boolean;
+  i, len: integer;
+  dummy: single;
+  dummy_str: string;
+begin
+  dummy := 1 / 2;
+  dummy_str := FloatToStr(dummy); // swap depending on host machine
+  len := length(dummy_str) - 1;
+
+  for i := 0 to len do
+  begin
+    if dummy_str[i] = '.' then
+      is_euro := true;
+    if dummy_str[i] = ',' then
+      is_euro := false;
+  end;
+
+  if is_euro = false then
+    pText := StringReplace(pText, '.', ',', [rfIgnoreCase, rfReplaceAll]);
+
+  if is_euro = true then
+    pText := StringReplace(pText, ',', '.', [rfIgnoreCase, rfReplaceAll]);
+
+  result := StrToFloat(pText);
+End;
+
+// load all files from path with extension.
+procedure GetFiles(Path, extension: string; search: integer = faAnyFile);
+var
+  sr: TSearchRec;
+begin
+  if FindFirst(Path + '*' + extension, search, sr) = 0 then
+  begin
+    repeat
+      if (sr.Name <> '.') and (sr.Name <> '..') then
+      begin
+        setlength(files, length(files) + 1);
+        files[length(files) - 1] := StringReplace(sr.Name, extension, '', [rfReplaceAll, rfIgnoreCase]);
+      end;
+    until FindNext(sr) <> 0;
+    FindClose(sr);
+  end;
+end;
+
+end.

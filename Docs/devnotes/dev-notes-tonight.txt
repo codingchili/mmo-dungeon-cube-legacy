@@ -1,0 +1,14 @@
+show all health bars when in battle, player taken damage last (10s)?
++ always show mini health bars for the targeted creature
+party, as target but even more compact + smaller.
+menu frame: to open settings/etc.. 
+minimap? yes can be cool
+decrement afflictions, remove afflictions on 0
+fix the fwicken projectile disappear bug??????
+show afflictions under target pane, barpane, partypane
+
++ much important: fix spellpacket, make work. rounding error? floats?
+
+runtime connecting gobs,
+gobs dead should not be broadcast on connect, how to remove a dead gob? - use interact on bodies to loot
+move hitpacket/deathpacket to network world, return a list of packets from SSpells and ETicks.Aff

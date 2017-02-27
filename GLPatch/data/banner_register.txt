@@ -1,0 +1,2 @@
+Please select a long password to strenghten our security. There is no password recovery service. 
+Make sure you choose a password you will not forget. Never share passwords between services.

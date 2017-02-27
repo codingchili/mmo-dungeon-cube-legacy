@@ -1,0 +1,198 @@
+unit Conf_Protocol;
+
+{$IFDEF Linux}{$Mode Delphi}{$ENDIF}
+
+interface
+
+uses Classes, SysUtils, IdGlobal;
+
+const
+    PACKETLOG = False;
+    SPACE = '+';
+    NEWLINE = '\';
+    SEPARATOR = '&';
+    SESSID_LENGTH = 25;
+    CHARID_LENGTH = 4;
+    USERNAME_LENGTH = 6;
+    USERNAME_MAXLEN = 20;
+    PASSWORD_LENGTH = 12;
+    PASSWORD_MAXLEN = 42;
+    SERIAL_LENGTH = 25;
+    SERIAL_MAXLEN = 29;
+    MAXPLAYERS = 100;
+    MAXACCOUNT = 2000;
+    MAXBYTES = 512;
+    VERSION_ID = 'v1.0.8a(w)'; // total amount of players connected to this server
+    // every map should also have limits?
+
+type
+    TMovementType = (waypoint = 0, teleport = 1, direction = 2, stopped = 3);
+
+type
+    TPlayerType = (Multiplayer = 0, Player = 1);
+
+type
+    TPackType = (Login = 0, Serverlist = 1, Ping = 2, Patch = 3, Disconnect = 8, Connect = 9, Character = 10, Map = 11,
+      License = 12, Name = 13, account = 14, chat = 15, World = 16);
+
+type
+    TAction = (none = 0, FileData = 1, Version = 2, count = 3, filesize = 4, Success = 5, Failure = 6, Registered = 7,
+      Add = 10, Download = 11, Update = 12, Movement = 13, Load = 14, Attribute = 15, Info = 16, Exist = 17,
+      Unavailable = 18, Select = 20, Attributes = 21, Online = 22, Offline = 23, AlreadyLoggedOn = 24, msg = 25,
+      VerifyPass = 26, Spell = 27, Collision = 28, Death = 29, Respawn = 30, Spawn = 31, Token = 32);
+
+type
+    TProfession = (Warrior = 0, Thief = 1, Mage = 2);
+
+type
+    TMessageType = (sys = 0, pm = 1, text = 2);
+
+type
+    TAttribute = (Health = 0, Energy = 1, Experience = 2);
+
+type
+    TDirection = (Up = 0, Down = 1, Left = 2, Right = 3, Null = 4, upleft = 5, upright = 6, downleft = 7,
+      downright = 8);
+
+type
+    TPacket = class
+    private
+    public
+        types: TPackType;
+        action: TAction;
+        ip: string[18];
+        sessid: string;
+        port, size: integer;
+        params: TStringList;
+        constructor create(sessid: string = '0'); overload;
+        constructor create(packtype: TPackType; action: TAction; sessid: string = '0'); overload;
+        destructor free;
+        procedure Add(text: string);
+        function parameters(): integer;
+        function param(index: integer): string;
+        function packetize(): TIdBytes;
+        function unpacketize(data: string): boolean;
+        class function Encoding(): IdTextEncodingType;
+        class function MAXBYTES(): int64;
+    end;
+
+var
+    // sessid: string[SESSID_LENGTH];
+    StartDate, PatchDate: TDateTime;
+
+implementation
+
+uses System_Log, System_UtilExt, Debug_Stopwatch;
+
+class function TPacket.MAXBYTES(): int64;
+begin
+    result := Conf_Protocol.MAXBYTES;
+end;
+
+class function TPacket.Encoding(): IdTextEncodingType;
+begin
+    result := IdTextEncodingType.encUTF8;
+end;
+
+constructor TPacket.create(sessid: string = '0');
+begin
+    self.sessid := sessid;
+    params := TStringList.create;
+end;
+
+constructor TPacket.create(packtype: TPackType; action: TAction; sessid: string = '0');
+begin
+    self.sessid := sessid;
+    params := TStringList.create;
+    self.action := action;
+    self.types := packtype;
+end;
+
+destructor TPacket.free;
+begin
+    params.Clear;
+    params.free;
+
+    if self <> nil then
+        inherited destroy;
+end;
+
+function TPacket.parameters: integer;
+begin
+    result := self.params.count;
+end;
+
+procedure TPacket.Add(text: string);
+begin
+    if (length(text) > 0) then
+
+        params.Add(text)
+    else
+        params.Add('0');
+end;
+
+function TPacket.param(index: integer): string;
+begin
+    if (params.count > index) then
+        result := params[index]
+    else
+        result := '0';
+end;
+
+function TPacket.packetize(): TIdBytes;
+var
+    i: integer;
+    astext: string;
+    data: TIdBytes;
+    len: word;
+begin
+    astext := sessid + SEPARATOR + IntToStr(ord(types)) + SEPARATOR + IntToStr(ord(action));
+
+    if (params.count > 0) then
+    begin
+        astext := astext + SEPARATOR;
+        for i := 0 to params.count - 1 do
+        begin
+            astext := astext + params[i];
+            if (i <> params.count - 1) then
+                astext := astext + SEPARATOR;
+        end;
+        params.Clear;
+    end;
+
+    astext := StringReplace(astext, ' ', SPACE, [rfReplaceAll]);
+
+    if PACKETLOG then
+        print('>> ' + astext, yellow);
+
+    data := ToBytes(astext, IndyTextEncoding(TPacket.Encoding));
+    // data := TPacket.Encoding.GetBytes(astext);
+    len := length(data);
+    setlength(result, len + 2);
+    move(len, result[0], 2);
+    move(data[0], result[2], len);
+end;
+
+function TPacket.unpacketize(data: string): boolean;
+begin
+    result := True; // check results with sessID
+    Split(SEPARATOR, data, params);
+    sessid := params[0];
+    types := TPackType(StrToInt(params[1]));
+    action := TAction(StrToInt(params[2]));
+    size := length(data);
+
+    params.text := StringReplace(params.text, SPACE, ' ', [rfReplaceAll]);
+
+    if params.count > 2 then
+    begin
+        params.Delete(0);
+        params.Delete(0);
+        params.Delete(0);
+    end;
+
+    if PACKETLOG then
+        print('<< ' + data, green);
+end;
+
+end.

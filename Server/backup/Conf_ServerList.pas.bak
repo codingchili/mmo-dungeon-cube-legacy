@@ -1,0 +1,195 @@
+unit Conf_ServerList;
+
+interface
+
+{$MODE DELPHI}
+
+uses IdContext, System_Log, Network_MetaServer, SysUtils, Conf_Protocol,
+  Classes, SyncObjs;
+
+type
+  TServerInfo = Record
+  public
+    context: TIdContext;
+    online: boolean;
+    name, status, mode, ip, key: string;
+    players, slots, registered, port, ping: integer;
+  End;
+
+type
+  TServerList = class
+  public
+    cs: TCriticalSection;
+    servers: array of TServerInfo;
+    procedure update(Packet: TPacket; var AContext: TIdContext);
+    procedure send(var AContext: TIdContext);
+    procedure Disconnection(ServerInfo: Pointer);
+    function ValidateWorldKey(key, ip: string): Pointer;
+    constructor create;
+  end;
+
+procedure Initialize;
+
+var
+  ServerList: TServerList;
+
+implementation
+
+constructor TServerList.create;
+begin
+  cs := TCriticalSection.create;
+  SetLength(servers, 0);
+end;
+
+procedure TServerList.Disconnection(ServerInfo: Pointer);
+begin
+  cs.Acquire;
+  try
+    TServerInfo(ServerInfo^).online := false;
+
+    print(TServerInfo(ServerInfo^).name + #9 + ' (' + TServerInfo(ServerInfo^).mode + ')' + #9 +
+      ' is now Offline.', Red);
+  finally
+    cs.Release;
+  end;
+end;
+
+function TServerList.ValidateWorldKey(key, ip: string): Pointer;
+var
+  i: integer;
+begin
+  cs.Acquire;
+  try
+    result := NIL;
+    for i := 0 to length(servers) - 1 do
+      if (key = servers[i].key) { and (ip = servers[i].ip) } then
+        result := @servers[i];
+  finally
+    cs.Release;
+  end;
+end;
+
+procedure TServerList.send(var AContext: TIdContext);
+var
+  i: integer;
+  Packet: TPacket;
+  payload: string;
+begin
+  Packet := TPacket.create;
+  cs.Acquire;
+  try
+    for i := 0 to length(servers) - 1 do
+    begin
+      Packet.types := TPackType.ServerList;
+      Packet.action := TAction.update;
+      Packet.add(servers[i].name);
+      Packet.add(servers[i].mode);
+      Packet.add(servers[i].ip);
+      Packet.add(inttostr(servers[i].port));
+      Packet.add(inttostr(servers[i].players));
+      Packet.add(inttostr(servers[i].slots));
+
+      if (servers[i].slots > 0) then
+      begin
+        if (servers[i].registered) < servers[i].slots then
+          Packet.add('Low')
+        else if (servers[i].registered < (servers[i].slots * 2)) then
+          Packet.add('Medium')
+        else if (servers[i].registered < servers[i].slots * 4) then
+          Packet.add('High')
+        else
+        begin
+          Packet.add('Full');
+          servers[i].online := false;
+        end;
+      end
+      else
+        Packet.add('N/A');
+
+      if (servers[i].online) then
+        Packet.add('1')
+      else
+        Packet.add('0');
+
+      payload := payload + Packet.packetize + #13 + #10;
+      // AContext.Connection.Socket.WriteLn(Packet.packetize, TEncoding.Unicode);
+    end;
+
+    Packet.types := TPackType.ServerList;
+    Packet.action := TAction.None;
+
+    payload := payload + Packet.packetize;
+
+    AContext.Connection.Socket.WriteLn(payload, TEncoding.Unicode);
+  finally
+    Packet.free;
+    cs.Release;
+  end;
+end;
+
+procedure TServerList.update(Packet: TPacket; var AContext: TIdContext);
+var
+  i: integer;
+  status: string;
+begin
+  cs.Acquire;
+  try
+    for i := 0 to length(servers) - 1 do
+      if (Packet.sessid = servers[i].key) then
+      begin
+        servers[i].mode := Packet.param(0);
+        servers[i].slots := StrToInt(Packet.param(1));
+        servers[i].players := StrToInt(Packet.param(2));
+        servers[i].registered := StrToInt(Packet.param(3));
+        servers[i].context := AContext;
+        servers[i].online := true;
+
+        if (servers[i].slots <= servers[i].players) then
+        begin
+          servers[i].online := false;
+        end;
+
+        print(servers[i].name + #9 + ' (' + servers[i].mode + ')' + #9 + ' [' + inttostr(servers[i].players) + '/' +
+          inttostr(servers[i].slots) + ']' + #9 + ' Online', LightGreen);
+      end;
+  finally
+    cs.Release;
+  end;
+end;
+
+procedure Initialize;
+var
+  confFile: TextFile;
+begin
+  ServerList := TServerList.create;
+
+  AssignFile(confFile, 'conf/worldlist.conf');
+  reset(confFile);
+
+  print('Reading Server List ...', Magenta);
+
+  while not(eof(confFile)) do
+  begin
+    SetLength(ServerList.servers, length(ServerList.servers) + 1);
+
+    with (ServerList.servers[high(ServerList.servers)]) do
+    begin
+      Readln(confFile, ServerList.servers[high(ServerList.servers)].name);
+      Readln(confFile, ServerList.servers[high(ServerList.servers)].ip);
+      Readln(confFile, ServerList.servers[high(ServerList.servers)].port);
+      Readln(confFile, ServerList.servers[high(ServerList.servers)].key);
+      Readln(confFile);
+      ServerList.servers[high(ServerList.servers)].status := 'Offline';
+      ServerList.servers[high(ServerList.servers)].mode := 'N/A';
+
+      print(#9 + name + #9 + ip + #9 + ' {' + key + '}', Magenta);
+    end;
+  end;
+
+  print(#9 + #13);
+  CloseFile(confFile);
+
+  // initialize our world servers here, if we are hosting any.
+end;
+
+end.

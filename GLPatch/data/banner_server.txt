@@ -1,0 +1,2 @@
+Selecting a server with a lower population will make sure that you can log on at any time.
+During peak hours servers at high population is often full.

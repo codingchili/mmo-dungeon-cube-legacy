@@ -1,0 +1,840 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectSession>
+    <Version Value="9"/>
+    <BuildModes Active="Default"/>
+    <Units Count="134">
+      <Unit0>
+        <Filename Value="Server.dpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="116"/>
+        <CursorPos X="59" Y="131"/>
+        <UsageCount Value="61"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdStackConsts.pas"/>
+        <UnitName Value="IdStackConsts"/>
+        <UsageCount Value="17"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdStruct.pas"/>
+        <UnitName Value="IdStruct"/>
+        <UsageCount Value="17"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseStratusVOS.pas"/>
+        <UnitName Value="IdFTPListParseStratusVOS"/>
+        <UsageCount Value="17"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdHTTPServer.pas"/>
+        <UnitName Value="IdHTTPServer"/>
+        <UsageCount Value="17"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdTCPClient.pas"/>
+        <UnitName Value="IdTCPClient"/>
+        <UsageCount Value="17"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdAllFTPListParsers.pas"/>
+        <UnitName Value="IdAllFTPListParsers"/>
+        <UsageCount Value="17"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdGopherServer.pas"/>
+        <UnitName Value="IdGopherServer"/>
+        <UsageCount Value="17"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseChameleonNewt.pas"/>
+        <UnitName Value="IdFTPListParseChameleonNewt"/>
+        <UsageCount Value="17"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/indysystemfpc.pas"/>
+        <UnitName Value="indysystemfpc"/>
+        <UsageCount Value="17"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseTSXPlus.pas"/>
+        <UnitName Value="IdFTPListParseTSXPlus"/>
+        <UsageCount Value="17"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdSystatServer.pas"/>
+        <UnitName Value="IdSystatServer"/>
+        <UsageCount Value="17"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdSASL.pas"/>
+        <UnitName Value="IdSASL"/>
+        <UsageCount Value="17"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdIMAP4.pas"/>
+        <UnitName Value="IdIMAP4"/>
+        <UsageCount Value="17"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdYarn.pas"/>
+        <UnitName Value="IdYarn"/>
+        <UsageCount Value="17"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdThread.pas"/>
+        <UnitName Value="IdThread"/>
+        <UsageCount Value="17"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdQotdServer.pas"/>
+        <UnitName Value="IdQotdServer"/>
+        <UsageCount Value="17"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdZLibCompressorBase.pas"/>
+        <UnitName Value="IdZLibCompressorBase"/>
+        <UsageCount Value="17"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdNetworkCalculator.pas"/>
+        <UnitName Value="IdNetworkCalculator"/>
+        <UsageCount Value="17"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseXecomMicroRTOS.pas"/>
+        <UnitName Value="IdFTPListParseXecomMicroRTOS"/>
+        <UsageCount Value="17"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseBullGCOS8.pas"/>
+        <UnitName Value="IdFTPListParseBullGCOS8"/>
+        <UsageCount Value="17"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdHTTP.pas"/>
+        <UnitName Value="IdHTTP"/>
+        <UsageCount Value="17"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdServerInterceptLogEvent.pas"/>
+        <UnitName Value="IdServerInterceptLogEvent"/>
+        <UsageCount Value="17"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdIPAddrMon.pas"/>
+        <UnitName Value="IdIPAddrMon"/>
+        <UsageCount Value="17"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdRexecServer.pas"/>
+        <UnitName Value="IdRexecServer"/>
+        <UsageCount Value="17"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFingerServer.pas"/>
+        <UnitName Value="IdFingerServer"/>
+        <UsageCount Value="17"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdAttachmentFile.pas"/>
+        <UnitName Value="IdAttachmentFile"/>
+        <UsageCount Value="17"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdHeaderCoderUTF8.pas"/>
+        <UnitName Value="IdHeaderCoderUTF8"/>
+        <UsageCount Value="17"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseKA9Q.pas"/>
+        <UnitName Value="IdFTPListParseKA9Q"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="17"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdResourceStringsCore.pas"/>
+        <UnitName Value="IdResourceStringsCore"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="17"/>
+      </Unit29>
+      <Unit30>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseWindowsNT.pas"/>
+        <UnitName Value="IdFTPListParseWindowsNT"/>
+        <UsageCount Value="17"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdPOP3.pas"/>
+        <UnitName Value="IdPOP3"/>
+        <UsageCount Value="17"/>
+      </Unit31>
+      <Unit32>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdDNSCommon.pas"/>
+        <UnitName Value="IdDNSCommon"/>
+        <UsageCount Value="17"/>
+      </Unit32>
+      <Unit33>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdUnixTimeServer.pas"/>
+        <UnitName Value="IdUnixTimeServer"/>
+        <UsageCount Value="17"/>
+      </Unit33>
+      <Unit34>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdCookieManager.pas"/>
+        <UnitName Value="IdCookieManager"/>
+        <UsageCount Value="17"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdQOTDUDP.pas"/>
+        <UnitName Value="IdQOTDUDP"/>
+        <UsageCount Value="17"/>
+      </Unit35>
+      <Unit36>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdCoderQuotedPrintable.pas"/>
+        <UnitName Value="IdCoderQuotedPrintable"/>
+        <UsageCount Value="17"/>
+      </Unit36>
+      <Unit37>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/indyprotocolsfpc.pas"/>
+        <UnitName Value="indyprotocolsfpc"/>
+        <UsageCount Value="17"/>
+      </Unit37>
+      <Unit38>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdGlobalProtocols.pas"/>
+        <UnitName Value="IdGlobalProtocols"/>
+        <UsageCount Value="17"/>
+      </Unit38>
+      <Unit39>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdSMTP.pas"/>
+        <UnitName Value="IdSMTP"/>
+        <UsageCount Value="17"/>
+      </Unit39>
+      <Unit40>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdDiscardServer.pas"/>
+        <UnitName Value="IdDiscardServer"/>
+        <UsageCount Value="17"/>
+      </Unit40>
+      <Unit41>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseBase.pas"/>
+        <UnitName Value="IdFTPListParseBase"/>
+        <UsageCount Value="17"/>
+      </Unit41>
+      <Unit42>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdUnixTimeUDP.pas"/>
+        <UnitName Value="IdUnixTimeUDP"/>
+        <UsageCount Value="17"/>
+      </Unit42>
+      <Unit43>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdMessageParts.pas"/>
+        <UnitName Value="IdMessageParts"/>
+        <UsageCount Value="17"/>
+      </Unit43>
+      <Unit44>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdIRC.pas"/>
+        <UnitName Value="IdIRC"/>
+        <UsageCount Value="17"/>
+      </Unit44>
+      <Unit45>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdIcmpClient.pas"/>
+        <UnitName Value="IdIcmpClient"/>
+        <UsageCount Value="17"/>
+      </Unit45>
+      <Unit46>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdHeaderCoderBase.pas"/>
+        <UnitName Value="IdHeaderCoderBase"/>
+        <UsageCount Value="17"/>
+      </Unit46>
+      <Unit47>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseNovellNetwarePSU.pas"/>
+        <UnitName Value="IdFTPListParseNovellNetwarePSU"/>
+        <UsageCount Value="17"/>
+      </Unit47>
+      <Unit48>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdInterceptSimLog.pas"/>
+        <UnitName Value="IdInterceptSimLog"/>
+        <UsageCount Value="17"/>
+      </Unit48>
+      <Unit49>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdReply.pas"/>
+        <UnitName Value="IdReply"/>
+        <UsageCount Value="17"/>
+      </Unit49>
+      <Unit50>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdTimeServer.pas"/>
+        <UnitName Value="IdTimeServer"/>
+        <UsageCount Value="17"/>
+      </Unit50>
+      <Unit51>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdServerIOHandlerSocket.pas"/>
+        <UnitName Value="IdServerIOHandlerSocket"/>
+        <UsageCount Value="17"/>
+      </Unit51>
+      <Unit52>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdCoder00E.pas"/>
+        <UnitName Value="IdCoder00E"/>
+        <UsageCount Value="17"/>
+      </Unit52>
+      <Unit53>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdCustomTransparentProxy.pas"/>
+        <UnitName Value="IdCustomTransparentProxy"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="17"/>
+      </Unit53>
+      <Unit54>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdTime.pas"/>
+        <UnitName Value="IdTime"/>
+        <UsageCount Value="17"/>
+      </Unit54>
+      <Unit55>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdBaseComponent.pas"/>
+        <UnitName Value="IdBaseComponent"/>
+        <UsageCount Value="17"/>
+      </Unit55>
+      <Unit56>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdGopher.pas"/>
+        <UnitName Value="IdGopher"/>
+        <UsageCount Value="17"/>
+      </Unit56>
+      <Unit57>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdSchedulerOfThreadPool.pas"/>
+        <UnitName Value="IdSchedulerOfThreadPool"/>
+        <UsageCount Value="17"/>
+      </Unit57>
+      <Unit58>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdTelnet.pas"/>
+        <UnitName Value="IdTelnet"/>
+        <UsageCount Value="17"/>
+      </Unit58>
+      <Unit59>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseNCSAForMACOS.pas"/>
+        <UnitName Value="IdFTPListParseNCSAForMACOS"/>
+        <UsageCount Value="17"/>
+      </Unit59>
+      <Unit60>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdNTLM.pas"/>
+        <UnitName Value="IdNTLM"/>
+        <UsageCount Value="17"/>
+      </Unit60>
+      <Unit61>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseEPLF.pas"/>
+        <UnitName Value="IdFTPListParseEPLF"/>
+        <UsageCount Value="17"/>
+      </Unit61>
+      <Unit62>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdScheduler.pas"/>
+        <UnitName Value="IdScheduler"/>
+        <UsageCount Value="17"/>
+      </Unit62>
+      <Unit63>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdDICT.pas"/>
+        <UnitName Value="IdDICT"/>
+        <UsageCount Value="17"/>
+      </Unit63>
+      <Unit64>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdContainers.pas"/>
+        <UnitName Value="IdContainers"/>
+        <UsageCount Value="17"/>
+      </Unit64>
+      <Unit65>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdHMAC.pas"/>
+        <UnitName Value="IdHMAC"/>
+        <UsageCount Value="17"/>
+      </Unit65>
+      <Unit66>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdMessageCoderYenc.pas"/>
+        <UnitName Value="IdMessageCoderYenc"/>
+        <UsageCount Value="17"/>
+      </Unit66>
+      <Unit67>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdIOHandler.pas"/>
+        <UnitName Value="IdIOHandler"/>
+        <UsageCount Value="17"/>
+      </Unit67>
+      <Unit68>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdTimeUDP.pas"/>
+        <UnitName Value="IdTimeUDP"/>
+        <UsageCount Value="17"/>
+      </Unit68>
+      <Unit69>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdChargenServer.pas"/>
+        <UnitName Value="IdChargenServer"/>
+        <UsageCount Value="17"/>
+      </Unit69>
+      <Unit70>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdCTypes.pas"/>
+        <UnitName Value="IdCTypes"/>
+        <UsageCount Value="17"/>
+      </Unit70>
+      <Unit71>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseVM.pas"/>
+        <UnitName Value="IdFTPListParseVM"/>
+        <UsageCount Value="17"/>
+      </Unit71>
+      <Unit72>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdDayTimeUDP.pas"/>
+        <UnitName Value="IdDayTimeUDP"/>
+        <UsageCount Value="17"/>
+      </Unit72>
+      <Unit73>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdExplicitTLSClientServerBase.pas"/>
+        <UnitName Value="IdExplicitTLSClientServerBase"/>
+        <UsageCount Value="17"/>
+      </Unit73>
+      <Unit74>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdHTTPHeaderInfo.pas"/>
+        <UnitName Value="IdHTTPHeaderInfo"/>
+        <UsageCount Value="17"/>
+      </Unit74>
+      <Unit75>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdRSH.pas"/>
+        <UnitName Value="IdRSH"/>
+        <UsageCount Value="17"/>
+      </Unit75>
+      <Unit76>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdTrivialFTPBase.pas"/>
+        <UnitName Value="IdTrivialFTPBase"/>
+        <UsageCount Value="17"/>
+      </Unit76>
+      <Unit77>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdServerIOHandlerStack.pas"/>
+        <UnitName Value="IdServerIOHandlerStack"/>
+        <UsageCount Value="17"/>
+      </Unit77>
+      <Unit78>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdCompressionIntercept.pas"/>
+        <UnitName Value="IdCompressionIntercept"/>
+        <UsageCount Value="17"/>
+      </Unit78>
+      <Unit79>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdDateTimeStamp.pas"/>
+        <UnitName Value="IdDateTimeStamp"/>
+        <UsageCount Value="17"/>
+      </Unit79>
+      <Unit80>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdLPR.pas"/>
+        <UnitName Value="IdLPR"/>
+        <UsageCount Value="17"/>
+      </Unit80>
+      <Unit81>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdDICTCommon.pas"/>
+        <UnitName Value="IdDICTCommon"/>
+        <UsageCount Value="17"/>
+      </Unit81>
+      <Unit82>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseWfFTP.pas"/>
+        <UnitName Value="IdFTPListParseWfFTP"/>
+        <UsageCount Value="17"/>
+      </Unit82>
+      <Unit83>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdSNTP.pas"/>
+        <UnitName Value="IdSNTP"/>
+        <UsageCount Value="17"/>
+      </Unit83>
+      <Unit84>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdMessageClient.pas"/>
+        <UnitName Value="IdMessageClient"/>
+        <UsageCount Value="17"/>
+      </Unit84>
+      <Unit85>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdOTPCalculator.pas"/>
+        <UnitName Value="IdOTPCalculator"/>
+        <UsageCount Value="17"/>
+      </Unit85>
+      <Unit86>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdZLibConst.pas"/>
+        <UnitName Value="IdZLibConst"/>
+        <UsageCount Value="17"/>
+      </Unit86>
+      <Unit87>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdOSFileName.pas"/>
+        <UnitName Value="IdOSFileName"/>
+        <UsageCount Value="17"/>
+      </Unit87>
+      <Unit88>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdFTPListParseAS400.pas"/>
+        <UnitName Value="IdFTPListParseAS400"/>
+        <UsageCount Value="17"/>
+      </Unit88>
+      <Unit89>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdMappedFTP.pas"/>
+        <UnitName Value="IdMappedFTP"/>
+        <UsageCount Value="17"/>
+      </Unit89>
+      <Unit90>
+        <Filename Value="/Downloads/indy-10.2.0.3/fpc/IdSocketHandle.pas"/>
+        <UnitName Value="IdSocketHandle"/>
+        <UsageCount Value="17"/>
+      </Unit90>
+      <Unit91>
+        <Filename Value="/Downloads/unit1.pas"/>
+        <ComponentName Value="Form1"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Unit1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="40" Y="3"/>
+        <UsageCount Value="17"/>
+      </Unit91>
+      <Unit92>
+        <Filename Value="System_Respawn.pas"/>
+        <UnitName Value="System_Respawn"/>
+        <UsageCount Value="17"/>
+      </Unit92>
+      <Unit93>
+        <Filename Value="Debug_Performance.pas"/>
+        <UnitName Value="Debug_Performance"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="32"/>
+        <CursorPos X="43" Y="45"/>
+        <UsageCount Value="20"/>
+      </Unit93>
+      <Unit94>
+        <Filename Value="clipboard.pas"/>
+        <UnitName Value="clipboard"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="8"/>
+        <CursorPos X="3" Y="20"/>
+        <UsageCount Value="9"/>
+      </Unit94>
+      <Unit95>
+        <Filename Value="System_Licensing.pas"/>
+        <UnitName Value="System_Licensing"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="14" Y="7"/>
+        <UsageCount Value="9"/>
+      </Unit95>
+      <Unit96>
+        <Filename Value="System_Log.pas"/>
+        <UnitName Value="System_Log"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="35"/>
+        <CursorPos X="48" Y="45"/>
+        <UsageCount Value="11"/>
+      </Unit96>
+      <Unit97>
+        <Filename Value="System_ConsoleEffect.pas"/>
+        <UnitName Value="System_ConsoleEffect"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="6" Y="5"/>
+        <UsageCount Value="9"/>
+      </Unit97>
+      <Unit98>
+        <Filename Value="System_UtilExt.pas"/>
+        <UnitName Value="System_UtilExt"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="16"/>
+        <CursorPos X="87" Y="24"/>
+        <UsageCount Value="11"/>
+      </Unit98>
+      <Unit99>
+        <Filename Value="Engine_Accounts.pas"/>
+        <UnitName Value="Engine_Accounts"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="177"/>
+        <CursorPos X="40" Y="191"/>
+        <UsageCount Value="12"/>
+      </Unit99>
+      <Unit100>
+        <Filename Value="Conf_Protocol.pas"/>
+        <UnitName Value="Conf_Protocol"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="19"/>
+        <CursorPos X="36" Y="17"/>
+        <UsageCount Value="16"/>
+      </Unit100>
+      <Unit101>
+        <Filename Value="Engine_Characters.pas"/>
+        <UnitName Value="Engine_Characters"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="16" Y="4"/>
+        <UsageCount Value="8"/>
+      </Unit101>
+      <Unit102>
+        <Filename Value="Network_Patching.pas"/>
+        <UnitName Value="Network_Patching"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="102"/>
+        <CursorPos X="68" Y="113"/>
+        <UsageCount Value="24"/>
+      </Unit102>
+      <Unit103>
+        <Filename Value="Conf_ServerList.pas"/>
+        <UnitName Value="Conf_ServerList"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="23" Y="15"/>
+        <UsageCount Value="10"/>
+      </Unit103>
+      <Unit104>
+        <Filename Value="Network_MetaServer.pas"/>
+        <UnitName Value="Network_MetaServer"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="108"/>
+        <CursorPos X="62" Y="119"/>
+        <UsageCount Value="15"/>
+      </Unit104>
+      <Unit105>
+        <Filename Value="Network_BackEnd.pas"/>
+        <UnitName Value="Network_BackEnd"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="9"/>
+        <UsageCount Value="15"/>
+      </Unit105>
+      <Unit106>
+        <Filename Value="Player_ItemPack.pas"/>
+        <UnitName Value="Player_ItemPack"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="14" Y="7"/>
+        <UsageCount Value="7"/>
+      </Unit106>
+      <Unit107>
+        <Filename Value="Engine_Tick.pas"/>
+        <UnitName Value="Engine_Tick"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="70" Y="9"/>
+        <UsageCount Value="11"/>
+      </Unit107>
+      <Unit108>
+        <Filename Value="Network_World.pas"/>
+        <UnitName Value="Network_World"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="404"/>
+        <CursorPos X="80" Y="474"/>
+        <UsageCount Value="11"/>
+      </Unit108>
+      <Unit109>
+        <Filename Value="Engine_Projectiles.pas"/>
+        <UnitName Value="Engine_Projectiles"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="226"/>
+        <CursorPos X="100" Y="238"/>
+        <UsageCount Value="9"/>
+      </Unit109>
+      <Unit110>
+        <Filename Value="Debug_Stopwatch.pas"/>
+        <UnitName Value="Debug_Stopwatch"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="42"/>
+        <CursorPos X="43" Y="35"/>
+        <UsageCount Value="10"/>
+      </Unit110>
+      <Unit111>
+        <Filename Value="/Downloads/indy10-5203/Lib/System/IdResourceStringsTextEncoding.pas"/>
+        <UnitName Value="IdResourceStringsTextEncoding"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="7"/>
+      </Unit111>
+      <Unit112>
+        <Filename Value="/Downloads/indy10-5203/Lib/Core/IdSocketHandle.pas"/>
+        <UnitName Value="IdSocketHandle"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="181"/>
+        <CursorPos X="38" Y="195"/>
+        <UsageCount Value="7"/>
+      </Unit112>
+      <Unit113>
+        <Filename Value="/Downloads/indy10-5203/Lib/Core/IdCompilerDefines.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="392"/>
+        <CursorPos X="5" Y="403"/>
+        <UsageCount Value="7"/>
+      </Unit113>
+      <Unit114>
+        <Filename Value="/Downloads/Indy10.0.52/Core/IdContext.pas"/>
+        <UnitName Value="IdContext"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="9"/>
+        <UsageCount Value="7"/>
+      </Unit114>
+      <Unit115>
+        <Filename Value="/Downloads/Indy10.0.52/Core/IdSocketHandle.pas"/>
+        <UnitName Value="IdSocketHandle"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="9"/>
+        <UsageCount Value="7"/>
+      </Unit115>
+      <Unit116>
+        <Filename Value="/Downloads/Indy10.0.52/System/IdException.pas"/>
+        <UnitName Value="IdException"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="2"/>
+        <UsageCount Value="7"/>
+      </Unit116>
+      <Unit117>
+        <Filename Value="/Downloads/Indy10.0.52/System/IdGlobal.pas"/>
+        <UnitName Value="IdGlobal"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="2798"/>
+        <CursorPos X="56" Y="2805"/>
+        <UsageCount Value="7"/>
+      </Unit117>
+      <Unit118>
+        <Filename Value="/Downloads/Indy_9_00_17_src/IdSocketHandle.pas"/>
+        <UnitName Value="IdSocketHandle"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="24" Y="8"/>
+        <UsageCount Value="7"/>
+      </Unit118>
+      <Unit119>
+        <Filename Value="/usr/share/lazarus/1.2.6/components/indy-10.2.0.3/lazarus/IdContext.pas"/>
+        <UnitName Value="IdContext"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="60"/>
+        <CursorPos X="31" Y="66"/>
+        <UsageCount Value="7"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit119>
+      <Unit120>
+        <Filename Value="IdUDPServer.pas"/>
+        <UnitName Value="IdUDPServer"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="75"/>
+        <CursorPos X="3" Y="83"/>
+        <UsageCount Value="8"/>
+      </Unit120>
+      <Unit121>
+        <Filename Value="Network_WorldServer.pas"/>
+        <UnitName Value="Network_WorldServer"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="34" Y="8"/>
+        <UsageCount Value="15"/>
+      </Unit121>
+      <Unit122>
+        <Filename Value="Conf_Servmode.pas"/>
+        <UnitName Value="Conf_Servmode"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="24"/>
+        <CursorPos X="28" Y="24"/>
+        <UsageCount Value="8"/>
+      </Unit122>
+      <Unit123>
+        <Filename Value="System_Bans.pas"/>
+        <UnitName Value="System_Bans"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="5"/>
+        <CursorPos X="14" Y="9"/>
+        <UsageCount Value="8"/>
+      </Unit123>
+      <Unit124>
+        <Filename Value="Engine_NPC.pas"/>
+        <UnitName Value="Engine_NPC"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="11" Y="5"/>
+        <UsageCount Value="11"/>
+      </Unit124>
+      <Unit125>
+        <Filename Value="Conf_Patching.pas"/>
+        <UnitName Value="Conf_Patching"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="51" Y="14"/>
+        <UsageCount Value="12"/>
+      </Unit125>
+      <Unit126>
+        <Filename Value="Network_Ping.pas"/>
+        <UnitName Value="Network_Ping"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="14" Y="5"/>
+        <UsageCount Value="9"/>
+      </Unit126>
+      <Unit127>
+        <Filename Value="/usr/share/lazarus/1.2.6/components/indy-10.2.0.3/lazarus/IdGlobal.pas"/>
+        <UnitName Value="IdGlobal"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="688"/>
+        <CursorPos X="3" Y="688"/>
+        <UsageCount Value="12"/>
+      </Unit127>
+      <Unit128>
+        <Filename Value="System_Token.pas"/>
+        <UnitName Value="System_Token"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="172"/>
+        <CursorPos X="27" Y="192"/>
+        <UsageCount Value="11"/>
+      </Unit128>
+      <Unit129>
+        <Filename Value="Engine_World.pas"/>
+        <UnitName Value="Engine_World"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="11" Y="7"/>
+        <UsageCount Value="11"/>
+      </Unit129>
+      <Unit130>
+        <Filename Value="System_DayTime.pas"/>
+        <UnitName Value="System_DayTime"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="45"/>
+        <CursorPos X="33" Y="57"/>
+        <UsageCount Value="11"/>
+      </Unit130>
+      <Unit131>
+        <Filename Value="NPC_Goblin.pas"/>
+        <UnitName Value="NPC_Goblin"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="11" Y="7"/>
+        <UsageCount Value="11"/>
+      </Unit131>
+      <Unit132>
+        <Filename Value="/usr/share/lazarus/1.2.6/components/indy-10.2.0.3/lazarus/IdStack.pas"/>
+        <UnitName Value="IdStack"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="628"/>
+        <CursorPos X="25" Y="656"/>
+        <UsageCount Value="11"/>
+      </Unit132>
+      <Unit133>
+        <Filename Value="../ExtLib/Indy10/System/IdGlobal.pas"/>
+        <UnitName Value="IdGlobal"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="891"/>
+        <CursorPos X="44" Y="915"/>
+        <UsageCount Value="10"/>
+      </Unit133>
+    </Units>
+    <General>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <JumpHistory Count="3" HistoryIndex="2">
+      <Position1>
+        <Filename Value="Server.dpr"/>
+        <Caret Line="31" Column="13" TopLine="33"/>
+      </Position1>
+      <Position2>
+        <Filename Value="Server.dpr"/>
+        <Caret Line="219" Column="39" TopLine="182"/>
+      </Position2>
+      <Position3>
+        <Filename Value="Server.dpr"/>
+        <Caret Line="220" Column="55" TopLine="182"/>
+      </Position3>
+    </JumpHistory>
+  </ProjectSession>
+</CONFIG>

@@ -1,0 +1,168 @@
+- add a target frame, displays name, level, class+spec/beast type,
+- fading spellframe, add fade support for frames/engines.
+- gathering, mining
+- inventory
+- equipment
+
+1, Jan + forwards: YouTube video
+- show boss multiplayer battle
+- add license pool before beta live.
+
+31, dec 2014
+- implement slow affliction
+- look into map graphics
+- ... process postponed items.
+
+30, dec 2014
+- every character has a channeled/charged/instant ability
+   warrior: channeled SPRINT, run faster while channeling (3s20%)
+   mage: frost aura (3s): channeled: nearby enemies are slowed by 35%
+   mage: heal: charge: heals a targeted enemy or friend. (200%)
+   thief: recurve: (2s) charge, projectile has bonus speed 125% damage (basic 50)
+   for: channel que: must check player not already in que to prevent flooding
+   cannot cast spells while channeling, cannot walk while charging nor cast
+
+29, dec 2014
+- add a single mob that attacks nearby players, has a base area which it will not walk outside of (as boss)
+  all other mobs should run after long and then stop somewhile.
+
+28, dec 2014
+- implement cast times [server+client, noCheatPls]
+- show target bar, set target as aID, if no target found on click clear target+hideFrame
+	alt: show target as lastDamagedaID ?
+- fix some bugs
+- replace Goblin graphics
+- replace mage/warrior/thief graphics
+- add charstats, enable add statpoints and reskin the frame!
+
+today, 27, dec 2014
++ enable on hover to see player health
++ on disconnect messages (remove player at enter charselect!)
++ set "lastbroadcasthealth" "thsihealth" > updateDelta (1% of health) sendMPAttributeUpdateToAll
+	using: clients does not need to calculate regen/tick dmg, and risk losing sync.
+	this value should only be updated for health regen/not direct damage
++ on connect messages (receive character list on connect.)
++ on player death set x:y
++ on player connect set additional attributes
++ fix spawn points, single map for test pls, Warrior? also dont spawn outside map
++ fix a bug that causes multiple connects sometimes/spawn point bug
++ wrong player dies/cannot cast spell/npc bug
++ PROJECTILE-REMOVER WORKS BADLY!
++ broadcast other players health (absolute+gain on damage (dmg-text), dmgpacket)
++ display other characters health on hover, (add later hotkey to show all)
++ added npc type mobs, enabled attribute access and process access, can fire projectiles and get hit.
+
+
+26 dec 2014
++ Hired 1 year of server for 40sek.
++ Ran the server on Linux VPS - all working fine, 40ms US_ca tcp/udp
++ On level up, new stats are sent to player.
++ find out why experience is not awarded for every kill and fix it [wasnot setting update in char]
++ did some work on a website, content required.
++ asynchronous hello message (udp)
++ fix the sort serverlist bug
++ fixed a bug that caused any license longer than 25 chars to be reusable.
++ added: can now sort on all columns in server list.
+
+before the next update
+- depthbuffer, water, some dumb npc, 1 new (channel/charge) skill per class, day-cycle + timesync,
+ iso-maps, online characters to synch on login, add collision handler on server for
+ tree base, on collision server sends message to remove projectile with the id.
+ add tree-sync, windowed support, configuration file: game.cfg, 
+
+TODO}
+ depth buffering
+ generate encryption keys at splash
+ game.exe - bringToFront, sometimes its not when launched from launcher!!!
+ rework the patcher for linux support.
+ rework the patcher for TPacket support.
+ tag all source files.
+ serialize to TIdBytes not String!
+ message header contains length, read length. - repeat, if received len > maxpacksize drop all.
+ ! server adjusts player positioning when the player does not move, merge the vectors!
+	the server calculates the players "dir" based on the last waypoint?
+
+BUG}
+- Gif spinner not always shown in StatusBox!
+- when a sever is "Full" (status), no logins can be done?
+- when a server is Full (quota), accounts can connect and log in.
+- when player dies, does not always fall dead, animation fails to start, but hitpacket is recvd..
+- goblins seems to fire when they are dead? hp = 0, these projectiles does not damage the player
+
+
+REMINDERS}
+cleaner ui -> less text colors
+
+
+
+THOUGHTS}
+players can summon stuff that follow them around, or send foul beasts onto their enemies
+with the AI model. 
+during beta test: allow the server admin account to spawn enemies. :D:D:D
+clean project and refactor please.
+the spellbuffer (casttime) is just a time -delay buffer? while in buffer, targets may or may not move.
+add softbards (show delta +-) on healthbars? 
+seeking spell: conjures some orbs that will search out nearby targets, friendly and otherwise
+  the orbs has a maximum turning angle, so they are avoidable, when a target is offseted by an angle
+  larger than x, the orb dies. the orbs will lock to nearest player at cast-time. players hit are slowed or smh  
+
+the maps might need to be revised, 1:1 maps are too big, create objects and texture.
+
+a silence should disrupt any spells currently being casted (except non silenceable spells)
+ display location at server selection, and main frame as debugtestdata, region (EU, US, AS) 
+ if myversion differ from the reported server version at server login show error
+	message: "Running Version 3.0 which is incompatible with Server 2.9" (major version) trunc+compare
+	+ " checking for updates.." + check for updates and display spinner, if a new version is found then
+ 	show message (Update to version X available, please restart and run the launcher to install.)
+
+ all components called with DRAW from ENGINE must take alpha as parameter,
+	engine uses TBlend?
+
+spell casting modes: 
+- instant: casted instantly: buffs, special abilities
+- channeled: damages periodically; chain lighning, aoe heals, drains
+- charged: thief draw arrow, heals, spells
+
+need to be able to change map while inside a map.
+need to gain multiplayer data when they join the map, xy, health, name etc
+progress bar, checkbox GUI Componenets GLGUI
+
+server rules for spawning trees,no trees may be too near eachothertrees should spawn in predefined conf files
+
+
+if not game.cfg found recreate with:
+
+#############################################################
+#  Game Configuration File  ||| DungeonCube Games!          #
+#############################################################
+
+# Resolution to use in game for windowed mode.
+#resolution = 1024x240
+
+# Full screen or windowed supported.
+window = fullscreen
+
+# Please, don't store sensitive information here.
+#username = UserNameToRemember
+#password = DontStoreYourPasswordHere
+#license = licensekey-dontstoreitheremate
+
+# If you change the line below, you are accepting the license in license.txt.
+showlicense = true
+
+# Show patch information when started.
+# true: show when there is a new patch.
+# false: never show.
+# force: always show.
+showpatch = true
+
+LINUX ONLY
+background image not scaled properly on linux
+client crash when server not accept
+client crash on udp send, try preset host/port?
+no hotkeys working, virtual keys not the same?
+topbar always on
+test patcher server for indexing error
+
+LINUX ONLY capslock always on
+LINUX ONLY license/patch not opening on linux client???

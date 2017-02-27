@@ -1,0 +1,716 @@
+unit Network_World;
+
+interface
+
+{$IFDEF Linux}{$MODE DELPHI}{$ENDIF}
+
+uses Engine_Characters, Classes, idContext, SysUtils, Conf_Protocol, System_Log,
+    IdSocketHandle, IdGlobal, SyncObjs,
+    IdUDPServer, Math, System_Spells, System_UtilExt, Engine_NPC, IdUDPClient;
+
+type
+    TNetworkWorld = class
+    private
+        server: TIdUDPServer;
+        // cs: TCriticalSection;
+        fworld, fspellman: Pointer;
+    public
+        // udp server read
+        procedure udpread(AThread: TIdUDPListenerThread; const AData: TIdBytes; ABinding: TIdSocketHandle); register;
+
+        // incoming packet dissectors
+        procedure chatpacket(var packet: TPacket);
+        procedure Movepacket(var packet: TPacket; var character: TCharacter);
+        procedure spellpacket(var packet: TPacket; var character: TCharacter);
+        procedure pingpacket(var packet: TPacket; ip: string; port: integer);
+        procedure respawnpacket(var character: TCharacter);
+
+        // outgoing
+        procedure ServerMessage(const text: string);
+        procedure SendSystem(const text: string; var character: TCharacter);
+        procedure UpdateDirty(chars: TPlayerList; var npc: TNPCList; tick: integer);
+        procedure ProcessHitlist(chars: TPlayerList; hitlist: THitList);
+
+        // character connect/disconnect
+        procedure uploadMapLoad(var character: TCharacter);
+        procedure Disconnect(chars: TPlayerList; id: integer; name: string);
+        procedure TokenExpired(var Socket: TIdSocketHandle; const sessid: string);
+
+        // update attributes
+        { } procedure SendAttribute(character: TCharacter);
+        { } procedure multiplayerSpawnMessage(world: TEntityWorld; stats: TEntityStats);
+        { } procedure sendPlayerAttributes(world: TEntityWorld; stats: TEntityStats; sender: Pointer);
+        { } procedure sendPlayers(character: TCharacter);
+
+        // send UDP punch
+        procedure sendPunch(network: TEntityNetwork);
+
+        // get listening port
+        function getPort(): integer;
+        function getSocket(): TIdUDPServer;
+
+        // constructor
+        constructor create(spellman, world: Pointer);
+    end;
+
+implementation
+
+uses Network_WorldServer, Conf_Patching, Engine_World, System_DayTime, Conf_Server, System_Token;
+
+// load maps and colliders and portals and npc and and and xor
+constructor TNetworkWorld.create(spellman, world: Pointer);
+begin
+    // cs := TCriticalSection.create;
+    server := TIdUDPServer.create();
+
+    self.fworld := world;
+    self.fspellman := spellman;
+
+    with server.Bindings.Add do
+    begin
+        ip := '';
+        port := 0;
+    end;
+
+    server.ThreadedEvent := true;
+    server.OnUDPRead := udpread;
+    server.Active := true;
+end;
+
+function TNetworkWorld.getSocket;
+begin
+    result := server;
+end;
+
+procedure TNetworkWorld.TokenExpired(var Socket: TIdSocketHandle; const sessid: string);
+var
+    reply: TPacket;
+begin
+    reply := TPacket.create;
+    try
+        reply.sessid := sessid;
+        reply.types := TPackType.Disconnect;
+        reply.action := TAction.Token;
+        Socket.SendTo(Socket.PeerIP, Socket.PeerPort, reply.packetize);
+    finally
+        reply.Free;
+    end;
+end;
+
+procedure TNetworkWorld.ProcessHitlist(chars: TPlayerList; hitlist: THitList);
+var
+    i, k: integer;
+    hitpacket, deathpacket: TPacket;
+begin
+    hitpacket := TPacket.create(TPackType.world, TAction.Collision, '');
+    deathpacket := TPacket.create(TPackType.world, TAction.Death);
+
+    try
+        // targetId, senderId, value, textcolor, prjId
+        for k := 0 to length(chars) - 1 do
+        begin
+            for i := 0 to length(hitlist) - 1 do
+                with (hitlist[i]) do
+                begin
+                    hitpacket.sessid := chars[k].sessid;
+                    hitpacket.Add(IntToStr(target));
+                    hitpacket.Add(IntToStr(TEntityWorld(sender_world^).entityId));
+
+                    if value > -1 then
+                        hitpacket.Add('+' + IntToStr(value))
+                    else
+                        hitpacket.Add(IntToStr(value));
+
+                    hitpacket.Add(IntToStr(color));
+                    hitpacket.Add(IntToStr(projectileId));
+
+                    if (fatality) then
+                    begin
+                        if (chars[k]^.world.entityId = hitlist[i].target) then
+                            chars[k]^.state.update := true; // character gained EXP!
+
+                        deathpacket.sessid := chars[k]^.sessid;
+                        deathpacket.Add(IntToStr(target));
+                        deathpacket.Add(targetname + ' killed by ' + TEntityStats(sender_stats^).name + ' using ' +
+                          spellname + '.');
+                        deathpacket.Add(IntToStr($FFFF00CC));
+                        server.SendBuffer(chars[k]^.network.ip, chars[k]^.network.port, deathpacket.packetize);
+                    end
+                    else
+                        server.SendBuffer(chars[k]^.network.ip, chars[k]^.network.port, hitpacket.packetize);
+                end;
+        end;
+    finally
+        hitpacket.Free;
+        deathpacket.Free;
+    end;
+end;
+
+procedure TNetworkWorld.UpdateDirty(chars: TPlayerList; var npc: TNPCList; tick: integer);
+var
+    i: integer;
+begin
+    try
+        for i := 0 to length(npc) - 1 do
+        begin
+            if (npc[i].stats.alive) then
+                with (npc[i]) do
+                begin
+                    if (state.mpupdate = true) then
+                    begin
+                        sendPlayerAttributes(npc[i].world, npc[i].stats, NIL);
+                        npc[i].state.mpupdate := false;
+                    end;
+                end;
+        end;
+
+        for i := 0 to length(chars) - 1 do
+        begin
+            if (chars[i]^.stats.alive) then
+                with (chars[i]^) do
+                begin
+                    if (state.update) then
+                    begin
+                        SendAttribute(chars[i]^);
+                        chars[i]^.state.update := false;
+                    end;
+
+                    if (state.mpupdate = true) then
+                    begin
+                        sendPlayerAttributes(chars[i]^.world, chars[i]^.stats, chars[i]);
+                        chars[i]^.state.mpupdate := false;
+                    end;
+
+                    if (chars[i]^.state.lastpunch > TPS * 15) then
+                    begin
+                        chars[i].state.lastpunch := tick;
+                        sendPunch(chars[i]^.network);
+                    end;
+                end;
+        end;
+    except
+        on e: exception do
+            print('EXCEPTION IN UPDATEDIRTY! ' + e.message);
+    end;
+end;
+
+procedure TNetworkWorld.sendPunch(network: TEntityNetwork);
+begin
+    server.Send(network.ip, network.port, '$' { , TPacket.Encoding } );
+end;
+
+function TNetworkWorld.getPort;
+begin
+    result := server.Binding.port;
+end;
+
+// remove the character from the list before attempting to send data to it. w
+// if the disconnected character is in battle delay his logoff by 15 seconds. servermessage (chat text) (logged out)
+procedure TNetworkWorld.Disconnect(chars: TPlayerList; id: integer; name: string);
+var
+    i: integer;
+    packet: TPacket;
+begin
+    packet := TPacket.create;
+
+    try
+        for i := 0 to length(chars) - 1 do
+        begin
+            packet.sessid := chars[i]^.sessid;
+            packet.types := TPackType.Disconnect;
+            packet.Add(IntToStr(id));
+            server.SendBuffer(chars[i]^.network.ip, chars[i]^.network.port, packet.packetize { , packet.Encoding } );
+        end;
+    finally
+        packet.Free;
+    end;
+end;
+
+// keyboard input movement broadcaster..
+procedure TNetworkWorld.Movepacket(var packet: TPacket; var character: TCharacter);
+var
+    i, j, x, y, dir: integer;
+    update: TPacket;
+    movementtype: TMovementType;
+    chars: TPlayerList;
+begin
+    movementtype := TMovementType(ord(StrToInt(packet.param(0))));
+    dir := StrToInt(packet.param(1));
+    x := StrToInt(packet.param(2));
+    y := StrToInt(packet.param(3));
+
+    update := TPacket.create;
+    try
+        with character do
+        begin
+            world.movementtype := movementtype;
+
+            if (movementtype = TMovementType.waypoint) then
+            begin
+                world.waypoint.x := x;
+                world.waypoint.y := y;
+                world.dir := round(DegToRad(Math.ArcTan2(world.waypoint.y - world.y, world.waypoint.x - world.x)));
+            end
+            else if (movementtype = TMovementType.direction) then
+                world.dir := dir;
+            // teleport cannot be done here, its a hack lol.
+
+            chars := TWorld(fworld).getPlayers;
+            // broadcast changes
+            for j := 0 to high(chars) do
+            begin
+                if (chars[j]^.sessid <> packet.sessid) then
+                begin
+                    update.sessid := chars[j]^.sessid;
+                    update.types := TPackType.character;
+                    update.action := TAction.MOVEMENT;
+                    update.Add(IntToStr(ord(TPlayerType.Multiplayer)));
+                    update.Add(IntToStr(ord(movementtype)));
+                    update.Add(IntToStr(character.world.entityId));
+                    update.Add(IntToStr(world.dir));
+
+                    if (movementtype = TMovementType.waypoint) then
+                    begin
+                        update.Add(IntToStr(world.waypoint.x));
+                        update.Add(IntToStr(world.waypoint.y));
+                    end
+                    else if (movementtype = TMovementType.direction) then
+                    begin
+                        update.Add(IntToStr(trunc(world.x)));
+                        update.Add(IntToStr(trunc(world.y)));
+                    end;
+
+                    update.Add(FloatToStr(stats.speed));
+
+                    server.SendBuffer(chars[j]^.network.ip, chars[j]^.network.port,
+                      update.packetize { , packet.Encoding } );
+                end;
+            end;
+        end;
+    finally
+        update.Free;
+    end;
+end;
+
+procedure TNetworkWorld.SendSystem(const text: string; var character: TCharacter);
+var
+    packet: TPacket;
+begin
+    packet := TPacket.create;
+
+    with character do
+        try
+            packet.sessid := sessid;
+            packet.types := TPackType.Chat;
+            packet.action := TAction.msg;
+            packet.Add(IntToStr(ord(TMessageType.sys)));
+            packet.Add('');
+            packet.Add('');
+            packet.Add(text);
+            packet.Add('0');
+            packet.Add('0');
+
+            server.SendBuffer(network.ip, network.port, packet.packetize { , packet.Encoding } );
+        finally
+            packet.Free;
+        end;
+end;
+
+// only call while locked
+procedure TNetworkWorld.ServerMessage(const text: string);
+var
+    i, len: integer;
+    chars: TPlayerList;
+begin
+    chars := TWorld(fworld).getPlayers;
+    try
+        len := length(chars) - 1;
+        for i := 0 to len do
+            SendSystem(text, chars[i]^);
+    finally
+
+    end;
+end;
+
+procedure TNetworkWorld.chatpacket(var packet: TPacket);
+var
+    i, len: integer;
+    receiver: string;
+    pm, recipient: boolean;
+    character: Pointer;
+    chars: TPlayerList;
+begin
+    pm := false;
+    recipient := false;
+
+    try
+        if packet.param(1) = '0' then
+        begin
+            receiver := packet.param(1);
+            packet.params.Insert(0, IntToStr(ord(TMessageType.text)))
+        end
+        else
+        begin
+            receiver := packet.param(1);
+            packet.params.Insert(0, IntToStr(ord(TMessageType.pm)));
+            pm := true;
+        end;
+
+        chars := TWorld(fworld).getPlayers;
+        len := length(chars) - 1;
+
+        for i := 0 to len do
+        begin
+            packet.sessid := chars[i]^.sessid;
+
+            if (chars[i]^.sessid <> packet.sessid) and (receiver = '@' + chars[i]^.stats.name) then
+            begin
+                server.SendBuffer(chars[i]^.network.ip, chars[i]^.network.port,
+                  packet.packetize { , TPacket.Encoding } );
+                recipient := true;
+            end
+            else if (chars[i].sessid <> packet.sessid) and (receiver = '0') then
+                server.SendBuffer(chars[i]^.network.ip, chars[i]^.network.port,
+                  packet.packetize { , TPacket.Encoding } );
+        end;
+
+        if (pm = true) and (recipient = false) then
+        begin
+            if (TWorld(fworld).charsession(packet.sessid, character)) then
+                SendSystem('User "' + receiver + '" not Online.', TCharacter(character^));
+        end;
+
+    finally
+    end;
+end;
+
+procedure TNetworkWorld.pingpacket(var packet: TPacket; ip: string; port: integer);
+var
+    reply: TPacket;
+    character: Pointer;
+begin
+    reply := TPacket.create;
+    try
+        if TWorld(fworld).charsession(packet.sessid, character) then
+        begin
+            reply.types := TPackType.Ping;
+            reply.action := TAction.None;
+            reply.sessid := TCharacter(character^).sessid;
+            TCharacter(character^).network.port := port;
+            print('Set client ' + TCharacter(character^).stats.name + ' to port ' + IntToStr(port) +
+              ' this should fix port-rewriting', LightMagenta);
+            server.SendBuffer(ip, port, reply.packetize { , packet.Encoding } );
+        end;
+    finally
+        reply.Free;
+    end;
+end;
+
+procedure TNetworkWorld.spellpacket(var packet: TPacket; var character: TCharacter);
+var
+    chars: TPlayerList;
+    reply: TPacket;
+    cast: TCastAction;
+    i: integer;
+begin
+    chars := TWorld(fworld).getPlayers;
+
+    cast := TSpellMan(fspellman).Fire(StrToInt(packet.param(0)), @character.stats, @character.world,
+      SafeFloat(packet.param(1)));
+
+    if (cast.success) then
+    begin
+        reply := TPacket.create;
+        try
+            reply.types := TPackType.world;
+            reply.action := TAction.spell;
+            for i := 0 to High(chars) do
+            begin
+                reply.Add(IntToStr(character.world.entityId));
+                reply.Add(IntToStr(ord(TSpellMan(fspellman).getSpell(StrToInt(packet.param(0)),
+                  character.stats.profession).SpellType)));
+                reply.Add(packet.param(1));
+                reply.Add(IntToStr(cast.id));
+
+                reply.sessid := chars[i]^.sessid;
+                server.SendBuffer(chars[i]^.network.ip, chars[i]^.network.port, reply.packetize);
+            end;
+        finally
+            reply.Free;
+        end;
+    end;
+end;
+
+// todo create procedure to broadcast packet
+
+procedure TNetworkWorld.udpread(AThread: TIdUDPListenerThread; const AData: TIdBytes; ABinding: TIdSocketHandle);
+var
+    packet: TPacket;
+    character: ^TCharacter;
+    data: TIdBytes;
+begin
+    packet := TPacket.create;
+    try
+        if (length(AData) > 2) and (length(AData) < MAXBYTES) then
+        begin
+            SetLength(Data, length(AData) - 2);
+            Move(AData[2], Data[0], length(AData) - 2);
+
+            packet.ip := ABinding.PeerIP;
+            packet.port := ABinding.PeerPort;
+            packet.unpacketize(BytesToString(data, IndyTextEncoding(TPacket.Encoding)));
+
+            // verify the session here
+            if TokenDB.verify(packet.sessid, packet.ip, packet.port).valid then
+            begin
+                case packet.types of
+                    TPackType.Ping:
+                        pingpacket(packet, ABinding.PeerIP, ABinding.PeerPort);
+                end;
+
+                // get the active account->character using the session ID.
+                if (TWorld(fworld).charsession(packet.sessid, Pointer(character))) then
+                    with (character^) do
+                    begin
+                        if (packet.types = TPackType.Disconnect) then
+                            TWorld(fworld).Disconnect(character^);
+
+                        case packet.action of
+                            msg:
+                                chatpacket(packet);
+                            TAction.Respawn:
+                                respawnpacket(character^);
+                        end;
+
+                        if (stats.alive = true) then
+                        begin
+                            case packet.action of
+                                MOVEMENT:
+                                    Movepacket(packet, character^);
+                                spell:
+                                    spellpacket(packet, character^);
+                            end;
+                        end
+                        else
+                    end
+            end
+            else
+                TokenExpired(ABinding, packet.sessid);
+        end;
+    finally
+        packet.Free;
+    end;
+end;
+
+procedure TNetworkWorld.respawnpacket(var character: TCharacter);
+begin
+    if character.stats.alive = false then
+        TWorld(fworld).Respawn(character);
+end;
+
+procedure TNetworkWorld.SendAttribute(character: TCharacter);
+var
+    packet: TPacket;
+begin
+    packet := TPacket.create;
+
+    try
+        packet.types := TPackType.character;
+        packet.action := TAction.Attribute;
+        with character do
+        begin
+            packet.sessid := character.sessid;
+            packet.Add(IntToStr(round(stats.hp)));
+            packet.Add(IntToStr(stats.hpmax));
+            packet.Add(IntToStr(round(stats.energy)));
+            packet.Add(IntToStr(stats.energymax));
+            packet.Add(IntToStr(stats.exp));
+            packet.Add(IntToStr(stats.nexp));
+            packet.Add(IntToStr(stats.level));
+            packet.Add(IntToStr(stats.spellpower));
+            packet.Add(IntToStr(stats.attackpower));
+            packet.Add(IntToStr(stats.skillpts));
+            packet.Add(IntToStr(stats.attrpts));
+            server.SendBuffer(network.ip, network.port, packet.packetize { , packet.Encoding } );
+        end;
+    finally
+        packet.Free;
+    end;
+end;
+
+// attributes sent to all other players on update.
+procedure TNetworkWorld.sendPlayerAttributes(world: TEntityWorld; stats: TEntityStats; sender: Pointer);
+var
+    packet: TPacket;
+    len, i: integer;
+    chars: TPlayerList;
+begin
+    packet := TPacket.create(TPackType.character, TAction.update);
+    chars := TWorld(fworld).getPlayers;
+
+    len := length(chars) - 1;
+    try
+        for i := 0 to len do
+        begin
+            if (sender <> chars[i]) then
+            begin
+                packet.sessid := chars[i]^.sessid;
+                packet.Add(IntToStr(world.entityId));
+                packet.Add(IntToStr(stats.level));
+                packet.Add(IntToStr(trunc(stats.hp)));
+                packet.Add(IntToStr(trunc(stats.hpmax)));
+                packet.Add(IntToStr(trunc(stats.energy)));
+                packet.Add(IntToStr(trunc(stats.energymax)));
+                server.SendBuffer(chars[i]^.network.ip, chars[i]^.network.port, packet.packetize);
+            end;
+        end;
+    finally
+        packet.Free;
+    end;
+end;
+
+// attributes sent to all other players on connection.
+procedure TNetworkWorld.multiplayerSpawnMessage(world: TEntityWorld; stats: TEntityStats);
+var
+    packet: TPacket;
+    len, i: integer;
+    chars: TPlayerList;
+begin
+    packet := TPacket.create(TPackType.character, TAction.Spawn);
+    chars := TWorld(fworld).getPlayers;
+    len := length(chars) - 1;
+
+    try
+        for i := 0 to len do
+        begin
+            if (world.entityId <> chars[i]^.world.entityId) then
+            begin
+                packet.sessid := chars[i]^.sessid;
+                packet.Add(IntToStr(world.entityId));
+                packet.Add(IntToStr(trunc(world.x)));
+                packet.Add(IntToStr(trunc(world.y)));
+                packet.Add(IntToStr(ord(stats.profession)));
+                packet.Add(stats.name);
+                packet.Add(IntToStr(stats.level));
+                packet.Add(IntToStr(trunc(stats.hp)));
+                packet.Add(IntToStr(trunc(stats.hpmax)));
+                packet.Add(IntToStr(trunc(stats.energy)));
+                packet.Add(IntToStr(trunc(stats.energymax)));
+
+                server.SendBuffer(chars[i]^.network.ip, chars[i]^.network.port, packet.packetize);
+            end;
+        end;
+    finally
+        packet.Free;
+    end;
+end;
+
+// tell the connector which characters are online
+procedure TNetworkWorld.sendPlayers(character: TCharacter);
+var
+    packet: TPacket;
+    len, i: integer;
+    chars: TPlayerList;
+    npc: TNPCList;
+    payload: string;
+begin
+    packet := TPacket.create(TPackType.character, TAction.Online);
+
+    chars := TWorld(fworld).getPlayers;
+    len := length(chars) - 1;
+
+    try
+
+        // send players
+        for i := 0 to len do
+        begin
+            if (character.sessid <> chars[i]^.sessid) then
+                with chars[i]^ do
+                begin
+                    packet.sessid := character.sessid;
+                    packet.Add(IntToStr(world.entityId));
+                    packet.Add(IntToStr(trunc(world.x)));
+                    packet.Add(IntToStr(trunc(world.y)));
+                    packet.Add(IntToStr(ord(stats.profession)));
+                    packet.Add(stats.name);
+                    packet.Add(IntToStr(stats.level));
+                    packet.Add(IntToStr(trunc(stats.hp)));
+                    packet.Add(IntToStr(trunc(stats.hpmax)));
+                    packet.Add(IntToStr(trunc(stats.energy)));
+                    packet.Add(IntToStr(trunc(stats.energymax)));
+                    server.SendBuffer(character.network.ip, character.network.port, packet.packetize);
+                    // payload := payload + packet.packetize + sLineBreak;
+                end;
+        end;
+
+        npc := TWorld(fworld).getNPC;
+        len := length(npc) - 1;
+
+        // send npcs
+        for i := 0 to len do
+        begin
+            if (npc[i].stats.alive) then
+                with (npc[i]) do
+                begin
+                    packet.sessid := character.sessid;
+                    packet.Add(IntToStr(world.entityId));
+                    packet.Add(IntToStr(trunc(world.x)));
+                    packet.Add(IntToStr(trunc(world.y)));
+                    packet.Add(IntToStr(ord(stats.profession)));
+                    packet.Add(stats.name);
+                    packet.Add(IntToStr(stats.level));
+                    packet.Add(IntToStr(trunc(stats.hp)));
+                    packet.Add(IntToStr(trunc(stats.hpmax)));
+                    packet.Add(IntToStr(trunc(stats.energy)));
+                    packet.Add(IntToStr(trunc(stats.energymax)));
+                    server.SendBuffer(character.network.ip, character.network.port, packet.packetize);
+                    // payload := payload + packet.packetize + sLineBreak;
+                end;
+        end;
+
+    finally
+        packet.Free;
+    end;
+end;
+
+procedure TNetworkWorld.uploadMapLoad(var character: TCharacter);
+var
+    packet: TPacket;
+begin
+    packet := TPacket.create(TPackType.map, TAction.Load);
+
+    try
+        with character do
+        begin
+            server.Send(network.ip, network.port, '$');
+            packet.Add(map);
+            packet.Add(IntToStr(server.Binding.port));
+            packet.Add(IntToStr(round(world.x)));
+            packet.Add(IntToStr(round(world.y)));
+            packet.Add(stats.name);
+            packet.Add(IntToStr(stats.level));
+            packet.Add(FloatToStr(stats.speed));
+            packet.Add(IntToStr(world.entityId));
+            packet.Add(IntToStr(DayTime.ToSec));
+
+            network.Sock.Connection.Socket.Write(packet.packetize);
+
+            SendAttribute(character);
+
+            SendSystem('Running server [' + VERSION_ID + '], With Patch [' + FloatToStr(configs.version) + '].',
+              character);
+            SendSystem('Currently ' + IntToStr(Network_WorldServer.WorldServer.Online) + ' Players Online.', character);
+            SendSystem('Server Uptime Is [' + TimeToStr(Now - StartDate) + ']', character);
+            SendSystem('Server Time Is   [' + DayTime.FormatTime + ']', character);
+            SendSystem('Next Update Scheduled At [' + DateToStr(PatchDate) + ']', character);
+            SendSystem('For Patch Notes Visit "www.dungeoncube.com".', character);
+
+            multiplayerSpawnMessage(character.world, character.stats);
+            sendPlayers(character);
+        end;
+    finally
+        packet.Free;
+    end;
+end;
+
+end.

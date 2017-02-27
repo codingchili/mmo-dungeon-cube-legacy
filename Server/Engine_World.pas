@@ -1,0 +1,307 @@
+unit Engine_World;
+
+interface
+
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+
+uses Classes, System_Spells, Engine_NPC, Conf_WorldServer, Engine_Tick, Engine_Characters, SyncObjs, Network_World,
+  Debug_Performance, System_DayTime, SysUtils, System_UtilExt, IdUDPClient;
+
+type
+  TSpawnPoint = record
+  public
+    x, y: integer;
+    map: string[40];
+  end;
+
+type
+  TWorld = class(TThread)
+  protected
+    procedure Execute; override;
+  private
+    cs: TCriticalSection;
+    id, tick: integer;
+    spellman: TSpellMan;
+    npc: TNPCMan;
+    Spawns: array of TSpawnPoint;
+    TickMan: TEngine_Tick;
+    chars: TPlayerList;
+    network: TNetworkWorld;
+    fmap: string;
+    function getMap(): string;
+  public
+    property map: String read getMap;
+
+    // share char data with network.
+    function getPlayers(): TPlayerList;
+    function getNPC(): TNPCList;
+    function charsession(const sessid: string; var character: Pointer): boolean;
+
+    // respawning
+    procedure respawn(var character: TCharacter);
+    procedure RandSpawnPoint(var character: TCharacter);
+
+    // disconnect/connect characters
+    procedure Disconnect(var character: TCharacter);
+    procedure Add(var character: TCharacter);
+    // procedure AddNpc(npc: ....);
+
+    // constructor
+    constructor create(map: string; id: integer);
+    procedure Loadconfiguration;
+  end;
+
+implementation
+
+uses Debug_Stopwatch, System_Log, Conf_Server;
+
+function TWorld.getPlayers;
+begin
+  cs.Acquire;
+  try
+    result := chars;
+  finally
+    cs.Release;
+  end;
+end;
+
+function TWorld.getNPC;
+begin
+  cs.Acquire;
+  try
+    result := TNPCList(npc.list^);
+  finally
+    cs.Release;
+  end;
+end;
+
+function TWorld.charsession(const sessid: string; var character: Pointer): boolean;
+var
+  i, len: integer;
+begin
+  result := false;
+  character := NIL;
+
+  cs.Acquire;
+  try
+    len := length(chars) - 1;
+    for i := 0 to len do
+      if (sessid = chars[i]^.sessid) then
+      begin
+        character := @chars[i]^;
+        result := true;
+      end;
+  finally
+    cs.Release;
+  end;
+end;
+
+constructor TWorld.create(map: string; id: integer);
+begin
+  inherited create(false);
+  cs := TCriticalSection.create;
+  SetLength(chars, 0);
+  TickMan := TEngine_Tick.create;
+  daytime := TDayTime.create;
+  spellman := TSpellMan.create;
+  network := TNetworkWorld.create(Pointer(spellman), Pointer(self));
+  npc := TNPCMan.create(map);
+
+  print(#9 + ' Loaded: ' + map, System_Log.LightGreen);
+  self.fmap := map;
+  self.id := id;
+  tick := 0;
+
+  Loadconfiguration();
+  print(#9 + ' Done. [:' + IntToStr(network.getPort()) + ']', System_Log.LightGreen, false);
+end;
+
+procedure TWorld.Disconnect(var character: TCharacter);
+var
+  i, len, id: integer;
+  name: string;
+begin
+  name := character.stats.name;
+  id := character.world.entityId;
+
+  cs.Acquire;
+  try
+    len := length(chars);
+    for i := 0 to len - 1 do
+    begin
+      if (@character = chars[i]) then
+      begin
+        chars[i] := chars[high(chars)];
+        SetLength(chars, length(chars) - 1);
+        break;
+      end;
+    end;
+  finally
+    cs.Release;
+  end;
+
+  network.Disconnect(chars, id, name);
+end;
+
+procedure TWorld.Loadconfiguration();
+var
+  conf: TextFile;
+  line: string;
+  parameters: TStringList;
+  len, linenumber: integer;
+begin
+  AssignFile(conf, 'maps/' + self.map + '/conf.cfg');
+  reset(conf);
+  parameters := TStringList.create;
+
+  while not(eof(conf)) do
+  begin
+    readln(conf, line);
+    inc(linenumber);
+
+    Split('=', line, parameters, true);
+
+    try
+      if (parameters[0] = 'spawn') then
+      begin
+        Split(',', parameters[1], parameters, true);
+
+        len := length(self.Spawns);
+        SetLength(self.Spawns, len + 1);
+
+        self.Spawns[len].map := parameters[0];
+        self.Spawns[len].x := StrToInt(parameters[1]);
+        self.Spawns[len].y := StrToInt(parameters[2]);
+        // print(#9 + #9 + 'Spawn ' + parameters[0] + #9 + parameters[1] + ';' + parameters[2]);
+      end;
+    except
+      on E: Exception do
+      begin
+        print(E.Message);
+        print(#9 + #9 + ' configuration file error, Line = ' + IntToStr(linenumber) + '.', LightRed);
+      end;
+    end;
+  end;
+
+  closeFile(conf);
+end;
+
+// todo: only call this when a player is alive and connecting to the world..
+// add to world and send data to client. end with loadworld (mapname)
+procedure TWorld.Add(var character: TCharacter);
+begin
+  with character do
+  begin
+    cs.Acquire;
+    try
+      SetLength(self.chars, length(self.chars) + 1);
+      self.chars[high(self.chars)] := @character;
+    finally
+      cs.Release;
+    end;
+  end;
+  network.uploadMapLoad(character);
+end;
+
+function TWorld.getMap(): string;
+begin
+  result := fmap;
+end;
+
+procedure TWorld.respawn(var character: TCharacter);
+begin
+  if not(character.stats.alive) then
+  begin
+    RandSpawnPoint(character);
+    network.uploadMapLoad(character);
+  end;
+end;
+
+procedure TWorld.RandSpawnPoint(var character: TCharacter);
+var
+  randspawn: integer;
+begin
+  if not character.stats.alive then
+    with character do
+    begin
+      stats.alive := true;
+      randspawn := random(length(Spawns));
+      character.map := Spawns[randspawn].map;
+      world.x := Spawns[randspawn].x + random(100) - 50;
+      world.y := Spawns[randspawn].y + random(100) - 50;
+      stats.energy := round(stats.energymax * 0.16);
+      stats.hp := round(stats.hpmax * 0.16);
+    end;
+end;
+
+// perform ticks and stuffs
+procedure TWorld.Execute;
+var
+  i, skipticks: integer;
+  sw: TStopWatch;
+  delay: integer;
+  npclist: ^TNPCList;
+  client: TIdUDPClient;
+begin
+  sw := TStopWatch.create(false);
+  skipticks := 0;
+
+  while (true) do
+  begin
+    delay := (1000 div TPS - sw.ElapsedMilliseconds);
+    if (delay >= 0) then
+    begin
+      sleep(delay);
+      if (skipticks > 0) then
+      begin
+        cs.Acquire;
+        print(fmap + #9 + ' Running Behind ' + IntToStr(skipticks) + ' Ticks. ' + #9 + ' [' + IntToStr(length(chars)) +
+          ' Players]', red);
+        cs.Release;
+        skipticks := 0;
+      end;
+    end;
+
+    if (delay < 0) then
+      skipticks := skipticks + (abs(delay) div (1000 div TPS));
+
+    inc(tick);
+
+    cs.Acquire;
+    sw.Start;
+    try
+      // process afflictions
+      TickMan.tick(tick);
+
+      // process player
+      TickMan.ProcessPlayer(chars, TPS, tick);
+
+      // process npc
+      npclist := npc.list;
+
+      TickMan.processNPC(npclist^, TPS, tick);
+      npc.Process(chars, TPS, spellman, network.getSocket);
+
+      // process projectiles and process hitlist in networking
+      spellman.Process(TPS);
+      network.ProcessHitlist(chars, spellman.collisionPlayer(chars));
+      network.ProcessHitlist(chars, spellman.CollisionNPC(npc.list));
+
+      // send network updates
+      network.updateDirty(chars, npclist^, tick);
+
+      if tick = system.MaxInt then
+        tick := 1;
+
+    finally
+      cs.Release;
+      sw.Stop;
+      if LOGTICKS then
+        PerformanceLog.Ticks(sw.ElapsedTicks);
+    end;
+  end;
+end;
+
+end.

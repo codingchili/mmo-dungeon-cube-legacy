@@ -1,0 +1,223 @@
+program Server;
+// todo: virtualize this file into a thread. the thread will then proceed
+// to handle a MAP. spawn threads and handle users. when the user map travel
+// he will be moved into another "main" thread, instructed to load its map graphics
+// and reloaded with the map data.
+
+// when the server is shut down every client should receive a disconnected message,
+// not only disconnecting them gracefully but also allows server updates to come
+// live when clients reconnect.
+
+// the "main" thread will receive the initial connect and then forward the player
+// to a map and thread.
+
+// server head.
+
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+{$IFDEF Win32}
+{$APPTYPE CONSOLE}
+{$ENDIF}
+
+uses
+ {$IFDEF Linux}
+  cthreads,
+  cmem,
+  crt,
+ {$ENDIF}
+ {$IFDEF Win32}Windows,{$ENDIF}
+  SysUtils,
+  SyncObjs,
+  Classes,
+  DateUtils,
+  Network_WorldServer in 'Network_WorldServer.pas',
+  Conf_Patching in 'Conf_Patching.pas',
+  Conf_Protocol in 'Conf_Protocol.pas',
+  Conf_ServerList in 'Conf_ServerList.pas',
+  Conf_Server in 'Conf_Server.pas',
+  Conf_WorldServer in 'Conf_WorldServer.pas',
+  Debug_Performance in 'Debug_Performance.pas',
+  Debug_Stopwatch in 'Debug_Stopwatch.pas',
+  Conf_Names in 'Conf_Names.pas',
+  Conf_Patch in 'Conf_Patch.pas',
+  Engine_NPC in 'Engine_NPC.pas',
+  System_Spells in 'System_Spells.pas',
+  Engine_Tick in 'Engine_Tick.pas',
+  Engine_Accounts in 'Engine_Accounts.pas',
+  Engine_Characters in 'Engine_Characters.pas',
+  Network_Ping in 'Network_Ping.pas',
+  Network_World in 'Network_World.pas',
+  NPC_Goblin in 'NPC_Goblin.pas',
+  Player_ItemPack in 'Player_ItemPack.pas',
+  Network_BackEnd in 'Network_BackEnd.pas',
+  Network_MetaServer in 'Network_MetaServer.pas',
+  Network_Patching in 'Network_Patching.pas',
+  System_Cooldown in 'System_Cooldown.pas',
+  System_Licensing in 'System_Licensing.pas',
+  System_Log in 'System_Log.pas',
+  System_Respawn in 'System_Respawn.pas',
+  System_UtilExt in 'System_UtilExt.pas',
+  System_Bans in 'System_Bans.pas',
+  System_Blockmapper in 'System_Blockmapper.pas',
+  System_DayTime in 'System_DayTime.pas',
+  Engine_World in 'Engine_World.pas',
+  System_Token in 'System_Token.pas';
+
+procedure printstatus(master: boolean);
+var
+{$IFDEF Linux}
+  wasX, wasY, i: integer;
+{$ENDIF}
+  Caption, mode: string;
+  size, Count, max: integer;
+begin
+  max := Network_WorldServer.WorldServer.worldconf.quota;
+  size := Network_WorldServer.WorldServer.online();
+  Count := AccountDB.accountnum;
+
+  if GlobalConf.hostmode = 'master' then
+    mode := 'Master,'
+  else
+    mode := 'World,';
+
+  Caption := mode + ' Online [' + PChar(IntToStr(size)) + '/' + PChar(IntToStr(max)) + ']';
+  Caption := Caption + ' - Registered [' + IntToStr(Count) + ']';
+
+  if (LOGTICKS) then
+  begin
+    Caption := Caption + ' - MS/S = ' + FormatFloat('0.000', PerformanceLog.MsCount) + ' ms ';
+    Caption := Caption + '[' + FormatFloat('0.000', (100 * PerformanceLog.MsCount) / 1000) + '%].';
+  end;
+  Caption := Caption + ' - Ticks = ' + IntToStr(PerformanceLog.TickCount);
+
+{$IFDEF Win32}
+  SetConsoleTitle(PChar(Caption));
+{$ELSE}
+  { wasX := WhereX;
+    wasY := WhereY;
+    GotoXY(1, 1);
+    ClrEol;
+    print('-------------------------------  DungeonCube  -----------------------------------',
+    Brown, False);
+    GotoXY(1, 2);
+    ClrEol;
+    print(Caption, System_Log.LightGray, False);
+    GotoXY(1, 3);
+    ClrEol;
+    print('--------------------------------------------------------------------------------',
+    Brown, False);
+    GotoXY(wasX, wasY); }
+{$ENDIF}
+end;
+
+procedure Initialize;
+begin
+  StartDate := Now;
+  PatchDate := EncodeDateTime(2014, 08, 10, 16, 00, 00, 000);
+  Randomize; // todo use a stronger seed
+
+{$IFDEF Win32}
+  SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED);
+{$ENDIF}
+{$IFDEF Linux}
+  TextColor(System_Log.red);
+  TextBackground(Black);
+  ClrScr;
+{$ENDIF}
+  writeln('                     **************************************');
+  writeln('                     *     DungeonCube World Server       *');
+  writeln('                     *                                    *');
+  writeln('                     *     ' + VERSION_ID + ' chilimannen 2013.   *');
+  writeln('                     **************************************' + #10 + #13);
+
+{$IFDEF Win32}
+  SetConsoleTitle('Loading DungeonCube: WORLD');
+  SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), Brown);
+{$ENDIF}
+  System_Log.Initialize;
+  Print('Starting Logger..', Brown);
+  Print(#9 + ' Done.', LightGreen, False);
+  System_UtilExt.Initialize;
+  Conf_Server.Initialize;
+  Conf_Names.Initialize;
+
+  if (LOGTICKS) then
+    Debug_Performance.Initialize;
+
+  if GlobalConf.hostmode = 'master' then
+  begin
+    Conf_Patching.Initialize;
+    Network_Patching.Initialize; // if hostmode = patching
+    Network_MetaServer.Initialize;
+    System_Licensing.Initialize;
+    Engine_Tick.Initialize;
+    Conf_ServerList.Initialize;
+    Network_BackEnd.Initialize;
+  end;
+
+  System_Token.Initialize;
+  System_DayTime.Initialize;
+  Engine_Accounts.Initialize; // runs on the worldservers by sync in tmp mode
+  Network_WorldServer.Initialize; // world server only
+
+  Print('Waiting for connections..', Brown);
+
+{$IFDEF Win32}
+  MessageBeep(3);
+{$ENDIF}
+end;
+
+procedure deinitialize;
+begin
+  Network_MetaServer.Network.Server.Active := False;
+end;
+
+procedure menu();
+var
+  key: string;
+  command: string[26];
+begin
+  Randomize;
+
+  while True do
+  begin
+    sleep(50);
+
+    if GlobalConf.hostmode = 'master' then
+      printstatus(True)
+    else
+      printstatus(False);
+
+    { if (GetAsyncKeyState(ord('C')) <> 0) then
+      begin
+      System_Log.logging := false;
+
+      SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), LightRed);
+      write(#13 + #10 + 'cmd=');
+      readln(command);
+      System_Log.logging := true;
+
+      if (command = 'exit') then
+      break;
+
+      if (command = 'save') then
+      begin
+      if GlobalConf.hostmode = 'master' then
+      AccountDB.save;
+
+      CharDB.save;
+      Print('Save Completed. [0.00 ms]', Magenta);
+      break;
+      end;
+      end; }
+  end;
+
+end;
+
+begin
+  Initialize();
+  menu();
+  readln;
+
+end.

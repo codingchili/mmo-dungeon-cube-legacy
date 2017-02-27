@@ -1,0 +1,280 @@
+unit Engine_Tick;
+
+interface
+
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+
+uses SysUtils, System_Log, Classes, SyncObjs, Engine_Characters, Math, Windows, Engine_NPC;
+
+CONST
+  SLOW_AMOUNT = 0.75;
+  HASTE_AMOUNT = 1.3;
+  STUN_AMOUNT = 0.05;
+
+  UPDATE_BROADCAST = 0.01; // updates for other players
+  UPDATE_PLAYER = 0.005; // update only to player, every 0.5%
+
+  AFFRATE = 20;
+
+type
+  TStatus = (Bleed, Stealth, Poison, Farsight, Haste, Slow, Stun, Silence, Regeneration);
+
+type
+  TState = Record
+  public
+    state: TStatus;
+    player, owner: ^TEntityStats;
+    duration, power: integer;
+    dstack, pstack: boolean;
+  end;
+
+type
+  TEngine_Tick = class
+  private
+    cs: TCriticalSection;
+    affliction: array of TState;
+
+    // afflictions
+    function AfflictionPower(stats: TEntityStats; state: TStatus): single;
+    function hasaffliction(stats: TEntityStats; var state: TStatus): boolean;
+    procedure clean();
+    procedure invoke(var stats: TEntityStats; index: integer);
+
+    // move players/npcs
+    procedure movement(var world: TEntityWorld; var stats: TEntityStats; tps: integer);
+
+    // process player/npc
+    procedure process(var state: TEntityState; var stats: TEntityStats; tps, tick: integer);
+  public
+    constructor create();
+
+    // tick
+    procedure tick(tick: integer);
+
+    // process/tick
+    procedure processPlayer(var players: TPlayerList; tps, tick: integer);
+    procedure processNPC(var npc: TNPCList; tps, tick: integer);
+
+    // add new afflictions
+    procedure Add(var stats: TEntityStats; var state: TStatus; duration, power: integer);
+  end;
+
+procedure initialize();
+
+implementation
+
+uses Network_World, Conf_Protocol;
+
+constructor TEngine_Tick.create;
+begin
+  cs := TCriticalSection.create;
+  SetLength(affliction, 0);
+end;
+
+procedure TEngine_Tick.tick(tick: integer);
+var
+  i: integer;
+begin
+  // if (getASyncKeyState(ord('P')) <> 0) then
+  // self.Add(players[random(length(players))]^, TStatus.Poison, 60, 1);
+
+  // do this 1 per 4 ticks
+  if (tick mod AFFRATE = 0) then
+  begin
+    for i := 0 to length(affliction) - 1 do
+    begin
+      if (affliction[i].player^.alive) then
+        invoke(affliction[i].player^, i);
+
+      // dec(affliction[i].duration);
+    end;
+    clean();
+  end;
+end;
+
+// todo: manage stacking
+procedure TEngine_Tick.Add(var stats: TEntityStats; var state: TStatus; duration, power: integer);
+begin
+  SetLength(affliction, length(affliction) + 1);
+  affliction[high(affliction)].player := @stats;
+  affliction[high(affliction)].state := state;
+  affliction[high(affliction)].duration := duration;
+  affliction[high(affliction)].power := power;
+end;
+
+function TEngine_Tick.hasaffliction(stats: TEntityStats; var state: TStatus): boolean;
+var
+  i: integer;
+begin
+  for i := 0 to high(affliction) do
+    if (affliction[i].player = @stats) then
+      if (affliction[i].state = state) then
+      begin
+        result := true;
+        exit;
+      end;
+
+  result := false;
+end;
+
+procedure TEngine_Tick.clean();
+var
+  i: integer;
+begin
+  for i := 0 to high(affliction) do
+    if (affliction[i].duration < 1) then
+    begin
+      affliction[i] := affliction[high(affliction)];
+      SetLength(affliction, length(affliction) - 1);
+    end;
+end;
+
+// deal damage and do stuff that ticks yo..
+procedure TEngine_Tick.invoke(var stats: TEntityStats; index: integer);
+begin
+  case (affliction[index].state) of
+    TStatus.Poison:
+      begin
+        stats.hp := stats.hp - affliction[index].power;
+        print('Poison: ' + stats.name + ' damaged for ' + inttostr(affliction[index].power) +
+          ' points of Poison Damage.', LightRed);
+      end;
+  end;
+
+  if (stats.hp < 0) then
+    stats.alive := false;
+  // send deathpacket + experience!
+end;
+
+function TEngine_Tick.AfflictionPower(stats: TEntityStats; state: TStatus): single;
+var
+  i: integer;
+begin
+  result := 0;
+
+  for i := 0 to high(affliction) do
+    if (affliction[i].player = @stats) then
+      if (affliction[i].state = state) then
+      begin
+        result := result - affliction[i].power;
+        // (1.0 - power) * base;  power, 0.1;0.3;0.7 = 0.1 = 90% slow
+      end;
+end;
+
+procedure TEngine_Tick.movement(var world: TEntityWorld; var stats: TEntityStats; tps: integer);
+var
+  i: integer;
+  speed: single;
+begin
+  speed := { AfflictionPower(stats, TStatus.Slow) * } stats.speed;
+
+  if world.MovementType = TMovementType.waypoint then
+  begin
+    world.dir := round(RadToDeg(ArcTan2(world.waypoint.y - world.y, world.waypoint.x - world.x)));
+
+    if (abs(world.x - world.waypoint.x) + abs(world.y - world.waypoint.y)) < stats.speed * 2 then
+      world.MovementType := TMovementType.stopped;
+  end;
+
+  if (world.MovementType = TMovementType.direction) or (world.MovementType = TMovementType.waypoint) then
+  begin
+    world.x := world.x + cos((6.28 / 360) * world.dir) * speed * (60 / tps);
+    world.y := world.y + sin((6.28 / 360) * world.dir) * speed * (60 / tps);
+  end;
+end;
+
+procedure TEngine_Tick.processPlayer(var players: TPlayerList; tps: integer; tick: integer);
+var
+  i, len: integer;
+begin
+  len := length(players);
+
+  for i := 0 to len - 1 do
+  begin
+    process(players[i]^.state, players[i]^.stats, tps, tick);
+    movement(players[i]^.world, players[i]^.stats, tps);
+  end;
+end;
+
+procedure TEngine_Tick.processNPC(var npc: TNPCList; tps: integer; tick: integer);
+var
+  i, len: integer;
+begin
+  len := length(npc);
+
+  for i := 0 to len - 1 do
+  begin
+    process(npc[i].state, npc[i].stats, tps, tick);
+    movement(npc[i].world, npc[i].stats, tps);
+  end;
+end;
+
+// dont regenerate hp if bleeding?
+procedure TEngine_Tick.process(var state: TEntityState; var stats: TEntityStats; tps, tick: integer);
+begin
+  if (stats.alive) then
+  begin
+    if (trunc(stats.hp) < stats.hpmax) then
+    begin
+      stats.hp := stats.hp + (stats.hpmax * 0.01 / tps);
+
+      if (abs(state.lasthpbroadcast - stats.hp) > (UPDATE_BROADCAST * stats.hpmax)) or (trunc(stats.hp) = stats.hpmax)
+      then
+        state.mpupdate := true;
+
+      if (abs(state.lasthpupdate - stats.hp) > (UPDATE_PLAYER * stats.hpmax)) or (trunc(stats.hp) = stats.hpmax) then
+        state.update := true;
+    end;
+
+    if (trunc(stats.energy) < stats.energymax) then
+    begin
+      stats.energy := stats.energy + (stats.energymax * 0.01 / tps);
+
+      if (abs(state.lastmpbroadcast - stats.energy) > (UPDATE_BROADCAST * stats.energymax)) or
+        (trunc(stats.energy) = stats.energymax) then
+        state.mpupdate := true;
+
+      if (abs(state.lastmpupdate - stats.energy) > (UPDATE_PLAYER * stats.energymax)) or
+        (trunc(stats.energy) = stats.energymax) then
+        state.update := true;
+    end;
+
+    if (stats.exp > state.lastexpupdate) then
+    begin
+      state.update := true;
+      state.lastexpupdate := stats.exp;
+    end;
+
+    if (stats.exp > stats.nexp) then
+    begin
+      charDB.levelUp(stats, state);
+      state.mpupdate := true;
+      state.update := true;
+    end;
+
+    if (state.update) then
+    begin
+      state.lastmpupdate := (stats.energy);
+      state.lasthpupdate := (stats.hp);
+    end;
+
+    if (state.mpupdate) then
+    begin
+      state.lastmpbroadcast := (stats.energy);
+      state.lasthpbroadcast := (stats.hp);
+    end;
+  end;
+end;
+
+procedure initialize();
+begin
+  print('Starting TickMaster..', Brown);
+  print(#9 + ' Done.', LightGreen, false);
+  print('');
+end;
+
+begin
+
+end.

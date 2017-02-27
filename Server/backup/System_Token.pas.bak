@@ -1,0 +1,203 @@
+unit System_Token;
+
+interface
+
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+
+// on disconnects the associated session should be cleared.
+// only check this on connect? and on udp read, sort by session.
+// set token expiration
+
+uses Conf_Protocol, Classes, SyncObjs, SysUtils, DateUtils;
+
+const
+    TOKEN_CLEAN: integer = 60; // every 60 seconds, remove old tokens.
+    TOKEN_TTL: integer = 3600; // one hour, one minute during testing
+    LETTERS: array [0 .. 32] of string = ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+      'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '!', '#', '€', '}', ')', '(', '}');
+
+type
+    TTokenInfo = Record
+    public
+        account: integer;
+        valid: boolean;
+    End;
+
+type
+    TToken = class
+    private
+        ip: string[50];
+        key: string[25];
+        account: integer;
+        ttl: TDateTime;
+    public
+        constructor Create(ip: string; token: string; account: integer);
+    end;
+
+type
+    TTokenManager = class(TThread)
+    protected
+        procedure Execute; override;
+    private
+        token, Block: TList;
+        current: TDateTime;
+        cs: TCriticalSection;
+        procedure Clean();
+    public
+        function Verify(const key: string; const ip: string; const port: word): TTokenInfo;
+        procedure Read(var packet: TPacket);
+        class function generate(): string;
+        constructor Create();
+    end;
+
+procedure Initialize;
+
+var
+    TokenDB: TTokenManager;
+
+implementation
+
+uses System_Log;
+
+function compareByKey(Item1: Pointer; Item2: Pointer): integer;
+var
+    token1, token2: TToken;
+begin
+    token1 := TToken(Item1);
+    token2 := TToken(Item2);
+
+    if token1.key > token2.key then
+        Result := 1
+    else if token1.key = token2.key then
+        Result := 0
+    else
+        Result := -1;
+end;
+
+constructor TToken.Create(ip: string; token: string; account: integer);
+begin
+    self.ip := ip;
+    self.key := token;
+    self.account := account;
+    self.ttl := Now();
+end;
+
+procedure TTokenManager.Execute;
+begin
+    while not terminated do
+    begin
+        sleep(TOKEN_CLEAN * 1000);
+        Clean();
+    end;
+end;
+
+procedure TTokenManager.Clean;
+var
+    i: integer;
+begin
+    cs.acquire;
+    current := Now();
+    try
+        for i := 0 to token.count - 1 do
+        begin
+            if SecondsBetween(current, TToken(token.Items[i]).ttl) > TOKEN_TTL then
+            begin
+                token.Delete(i);
+            end;
+        end;
+    finally
+        cs.release;
+    end;
+end;
+
+class function TTokenManager.generate(): string;
+var
+    branch, i: integer;
+begin
+    Result := '';
+    for i := 0 to SESSID_LENGTH - 1 do
+    begin
+        if random(2) = 0 then
+        begin
+            if random(2) = 1 then
+                Result := Result + LETTERS[random(33)]
+            else
+                Result := Result + UpperCase(LETTERS[random(33)]);
+        end
+        else
+            Result := Result + inttostr(trunc(random(10)));
+    end;
+end;
+
+function TTokenManager.Verify(const key: string; const ip: string; const port: word): TTokenInfo;
+var
+    min, max, mid: integer;
+    its: integer;
+begin
+    its := 0;
+    Result.valid := false;
+    min := 0;
+
+    cs.acquire;
+    max := token.count - 1;
+
+    try
+        while (min <= max) and not(Result.valid) do
+        begin
+            inc(its);
+            mid := (max + min) div 2;
+
+            if (TToken(token.Items[mid]).key = key) then
+                Result.valid := true
+            else if (TToken(token.Items[mid]).key < key) then
+                min := mid + 1
+            else
+                max := mid - 1;
+        end;
+
+        if (Result.valid) then
+        begin
+            if (TToken(token.Items[mid]).ip <> ip) then
+            begin
+                Result.valid := false;
+            end
+            else
+                TToken(token.Items[mid]).ttl := current;
+        end;
+
+    finally
+        cs.release;
+    end;
+end;
+
+procedure TTokenManager.Read(var packet: TPacket);
+begin
+    cs.acquire;
+    try
+        print('Received Token = {#=' + packet.param(0) + ', token=' + packet.param(1) + ', addr=' + packet.param(2), System_Log.LightCyan);
+        token.Add(TToken.Create(packet.param(2), packet.param(1), StrToInt(packet.param(0))));
+        token.Sort(compareByKey);
+    finally
+        cs.release;
+    end;
+end;
+
+constructor TTokenManager.Create;
+var
+    i: integer;
+    atoken: string;
+begin
+    inherited Create;
+    cs := TCriticalSection.Create();
+    token := TList.Create;
+    current := Now();
+end;
+
+procedure Initialize;
+begin
+    TokenDB := TTokenManager.Create;
+end;
+
+end.

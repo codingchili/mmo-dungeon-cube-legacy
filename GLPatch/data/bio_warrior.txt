@@ -1,0 +1,16 @@
+The warrior uses strenght and a sharpened blade to silence their foes. If you want to stay alive you stay away. 
+The warrior has many attacks that deal high amounts of damage, but they need to get in rangein order to use them.
+    
+    Mage Hunter
+      The Mage hunter specializes in pursuing the magic users, it us most mobile type of warrior.May teleport 
+      or silence their target, they also have the ability to slow enemies movement  while increasing their own.
+    
+    Guardian
+      This type of warrior is more focused on dealing damage, with a few tricks such as stun or carnivourous bite 
+      the Guardian is a bit of everything. The warriors most powerful attacks is the Guardians, empowered with 
+      the ability to inflict Unholy (reduces healing, deals true damage).
+    
+    Protector
+      The protector uses magics and is similar to the Paladin. In battle the Protector has access to shielding abilities, 
+      heals and debuffs such as weaken (slow, reduces STR) or confuse (reduces INT). The protector may even shield 
+      another being.

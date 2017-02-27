@@ -1,0 +1,314 @@
+unit Engine_Projectiles;
+
+interface
+
+{$IFDEF Linux}
+{$MODE DELPHI}
+{$ENDIF}
+
+// need speed and dir and location of the other players (npcs and monsters too).
+// need support for instant aoe spells.
+// implementes TSpell.
+
+uses SysUtils, Conf_Protocol, System_Log, SyncObjs, Math, Engine_Tick,
+   classes, Debug_StopWatch, IdUDPServer, IdGlobal;
+
+
+type
+ TPoint = record
+   x, y: integer;
+ end;
+
+type
+  TTargetType = (Projectile = 0, Area = 1, Explosion = 2, Self = 3, Cone = 4);
+  // used for line of missile
+
+type
+  TSpellType = (WARRIOR_BASIC = 0, THIEF_BASIC = 1, MAGE_BASIC = 2);
+
+  // data for each level of the spell
+  // a spell
+type
+  TSpell = record
+  public
+    SpellType: TSpellType;
+    name: string[16];
+    icon, sprite: TPoint;
+    targeting: TTargetType;
+    cost, casttime, ttl, timer: integer;
+    learned: boolean;
+    damage, speed, duration, Cooldown: single;
+    // cooldown time for reset, timer time left of reset
+    description: string[60];
+  end;
+
+  // organize the spells into trees
+type
+  TSpellTree = record
+    name: string[16];
+    spells: array [0 .. 20] of TSpell;
+  end;
+
+type
+  TSpellProfession = record
+  public
+    trees: array [0 .. 2] of TSpellTree;
+    profession: TProfession;
+    basic: TSpell; // basic attacks are not a part of a tree
+  end;
+
+type
+  THitData = record
+  public
+    sender, target: integer;
+    value, color: string[10];
+    spellname: string[16];
+    fatality: boolean;
+  end;
+
+type
+  THitList = array of THitData;
+
+type
+  TProjectile = Record
+  public
+    x, y, dir: single;
+    sender: Pointer;
+    ttl: integer;
+    spell: TSpell;
+  End;
+
+type
+  TSpellMan = class
+  private
+    prj: array of TProjectile;
+    cs: TCriticalSection;
+    procedure Movement();
+    procedure Orphan();
+    procedure Collision(chars: TPlayerList; server: TIdUDPServer);
+  public
+    SpellCount: integer;
+    SpellSet: array of TSpellProfession;
+    procedure Fire(var spell: TSpell; sender: Pointer; x, y: integer; dir: single);
+    procedure Process(var chars: TPlayerList; var server: TIdUDPServer);
+    function getSpell(id: integer; profession: TProfession; var spell: TSpell): boolean;
+    constructor create;
+  end;
+
+  // procedure initialize(); read spell file.
+
+implementation
+
+uses Engine_Characters;
+
+function TSpellMan.getSpell(id: integer; profession: TProfession; var spell: TSpell): boolean;
+var
+  i, j: integer;
+begin
+  result := false;
+
+  if (integer(SpellSet[ord(profession)].basic.SpellType) = id) then
+  begin
+    spell := SpellSet[ord(profession)].basic;
+    result := true;
+  end
+  else
+    for i := 0 to high(SpellSet[ord(profession)].trees) do
+      for j := 0 to high(SpellSet[ord(profession)].trees[i].spells) do
+        if (ord(SpellSet[ord(profession)].trees[i].spells[j].SpellType) = id) then
+        begin
+          result := true;
+          spell := SpellSet[ord(profession)].trees[i].spells[j];
+        end;
+end;
+
+procedure TSpellMan.Orphan;
+var
+  i, j, trail, len, origlen: integer;
+begin
+  len := length(prj);
+
+  for i := 0 to len - 1 do
+  begin
+    if prj[i].ttl < 1 then
+    begin
+      trail := len - i - 1;
+      if trail > 0 then
+        Move(prj[i + 1], prj[i], SizeOf(TProjectile) * (trail));
+      Dec(len);
+    end;
+  end;
+
+  setlength(prj, len);
+end;
+
+// if spell is instant = use targetX/targetY..
+procedure TSpellMan.Fire(var spell: TSpell; sender: Pointer; x, y: integer; dir: single);
+var
+  Projectile: TProjectile;
+  len: integer;
+begin
+  Projectile.spell := spell;
+  Projectile.sender := sender;
+  Projectile.x := x;
+  Projectile.y := y;
+  Projectile.dir := dir;
+  Projectile.ttl := spell.ttl;
+
+  cs.Acquire;
+  try
+    len := length(prj);
+    setlength(prj, len + 1);
+    prj[len] := Projectile;
+    // get projectile defaults from spell..
+  finally
+    cs.Release;
+  end;
+end;
+
+// on collide set ttl to 0; todo: use radius/size of player/object.
+procedure TSpellMan.Collision(chars: TPlayerList; server: TIdUDPServer);
+var
+  i, j, damage: integer;
+  randmg: single;
+  hitpacket, deathpacket: TPacket;
+  hitdata, deathdata: string;
+  fatality, Collision: boolean;
+begin
+  fatality := false;
+  Collision := false;
+
+  for i := 0 to high(chars) do // will there be more chars or more prjs?
+    if (chars[i].alive) then
+      for j := 0 to high(prj) do
+      begin
+        // if PtInRect(Rect(round(chars[i].x + 22), round(chars[i].y + 6), round(chars[i].x + 22 + 24),
+        // round(chars[i].y + 64)), Point(round(prj[i].x), round(prj[i].y))) then
+        if (prj[j].sender <> chars[i]) then
+          if (sqrt(abs(Power(chars[i].x - prj[j].x, 2) + Power(chars[i].y - prj[j].y, 2))) < 40) then
+          begin
+            prj[j].ttl := 0;
+
+            damage := Ceil(prj[j].spell.damage * (1 + (random(40) - 20) / 100) * TCharacter(prj[j].sender^).ap);
+            chars[i].hp := chars[i].hp - damage;
+
+            if not(Collision) then
+            begin
+              Collision := true;
+              hitpacket := TPacket.create(TPackType.World, TAction.Collision, '');
+            end;
+
+            hitpacket.Add(inttostr(chars[i].aID));
+            hitpacket.Add(inttostr(TCharacter(prj[j].sender^).aID));
+            hitpacket.Add('-' + inttostr(damage));
+            hitpacket.Add(inttostr($FFFF0000));
+
+            if (chars[i].hp < 1) then
+            begin
+              chars[i].alive := false;
+
+              if not(fatality) then
+              begin
+                fatality := true;
+                deathpacket := TPacket.create(TPackType.World, TAction.Death, '');
+              end;
+              deathpacket.Add(inttostr(chars[i].aID));
+              deathpacket.Add(chars[i].name + ' killed by ' + TCharacter(prj[j].sender^).name + ' using ' +
+                prj[j].spell.name + '.');
+              deathpacket.Add(inttostr($FFFF00CC));
+              TCharacter(prj[j].sender^).exp := TCharacter(prj[j].sender^).exp + chars[i].level * chars[i].level;
+            end;
+          end;
+      end;
+
+  if (Collision) then
+  begin
+    hitdata := hitpacket.packetize;
+
+    if (Collision) then // todo: post udp-packetchain-client //and not (fat)
+      for i := 0 to length(chars) - 1 do
+        server.Send(chars[i].ip, chars[i].port, chars[i].sessid + hitdata{, hitpacket.encoding});
+
+
+    if { (Collision) and } (fatality) then
+    begin
+      deathdata := deathpacket.packetize;
+
+      for i := 0 to length(chars) - 1 do
+        server.Send(chars[i].ip, chars[i].port, chars[i].sessid + deathdata, deathpacket.Encoding);
+
+      deathpacket.free;
+    End;
+    hitpacket.free;
+  end;
+end;
+
+// amplify speed by 1/tickrate
+procedure TSpellMan.Movement;
+var
+  i, len: integer;
+begin
+  len := length(prj);
+
+  for i := 0 to len - 1 do
+  begin
+    prj[i].x := prj[i].x + TSpell(prj[i].spell).speed * Cos(prj[i].dir);
+    prj[i].y := prj[i].y + TSpell(prj[i].spell).speed * Sin(prj[i].dir);
+    Dec(prj[i].ttl);
+  end;
+end;
+
+procedure TSpellMan.Process(var chars: TPlayerList; var server: TIdUDPServer);
+begin
+  cs.Acquire;
+  try
+    Orphan();
+    Movement();
+    Collision(chars, server);
+  finally
+    cs.Release;
+  end;
+end;
+
+constructor TSpellMan.create;
+var
+  bin: file of TSpellProfession;
+  i, j, k: integer;
+begin
+  cs := TCriticalSection.create;
+  setlength(prj, 0);
+
+  if fileexists('data/spell.bin') then
+  begin
+
+    assignfile(bin, 'data/spell.bin');
+    reset(bin);
+    while not eof(bin) do
+    begin
+      setlength(SpellSet, length(SpellSet) + 1);
+      read(bin, SpellSet[length(SpellSet) - 1]);
+    end;
+    closefile(bin);
+  end
+  else
+  begin
+    print('Fatal: Missing data/spell.bin');
+    halt;
+  end;
+
+  for i := low(SpellSet) to High(SpellSet) do
+  begin
+    // print('Basic name: ' + SpellSet[i].basic.name);
+    for j := low(SpellSet[i].trees) to High(SpellSet[i].trees) do
+    begin
+      // print('Reading Tree: ' + SpellSet[i].trees[j].name);
+      for k := low(SpellSet[i].trees[j].spells) to High(SpellSet[i].trees[j].spells) do
+      begin
+        // print('Reading Spell: ' + SpellSet[i].trees[j].spells[k].name);
+      end;
+    end;
+  end;
+
+end;
+
+end.

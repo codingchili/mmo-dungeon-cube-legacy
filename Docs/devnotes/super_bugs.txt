@@ -1,0 +1,4 @@
+- VCL components behind the draw, stopping mouse input...
+- Regional . or , encoding for floats. 
+- Indy Requires IPV4 to be set..
+- Unset compiler define, return value not specified. (ERROR_NOT_A_SOCKET)

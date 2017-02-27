@@ -1,0 +1,79 @@
+------------------ MAIN --------------------------
+------------------ MISC -------------------------
+[] - configuration files should store data in key-value pairs
+[] - check linux compileability, server/patcher/game
+
+---------------- OFFSITE WORLDSERVER --------------------
+------------------ OPTIMIZATION ------------------------
+
+------------------ SECURITY ------------------------
+[] - encrypt all network traffic, two-way
+[] - encrypt all configuration keys (simple xor, enter att startup)
+[] - if charsession fails 10 times for the same ip, then block the ip for 30 minutes.
+[] - hash and salt all passwords. (unique salt for every password..)
+[] - when logging on all spells are on cooldown. (prevent relogg hack)
+[] - in client receive verify that the sessid in packet is correct, prevent thiefes.
+
+------------------ LAUNCHER/PATCHER ------------------------
+[] - group packets to improve speed.
+
+----------------- BALANCE ------------------------
+---------------- CLASSES -------------------------
+---------------- GAMEPLAY ------------------------
+
+---------------- DEBUG ---------------------------
+[] - sometimes the worldserver fails to list the characters.
+[] - sometimes the master fails to list the servers.
+
+---------------- SKILLS -------------------------
+--------------- GRAPHICS -------------------------
+--------------- CODING ---------------------------
+--------------- NETWORK ---------------------------
+
+
+
+
+############# --- DEV - LOG --- ############
+
+[] - protect character names, to avoid someone stealing private message convos.
+[] - implement more tick modes, more threads or more MODuLO ? 
+[] - bind login to add in network_world
+[] - conditions from _different_ users stack, from same user stacks duration.
+[] - conditions should have a max duration to prevent locking.
+[] - slow, stun, silence, blind: stacks duration.
+[] - implement unit collision with buildings, implement entities
+[] - stun/slowbreaker for warrior class
+[] - launcher out of version, showmessage and execute download link.
+[] - install mode for launcher, ask for install folder, copy self, terminate and run the copy,.
+[] - test erorr handling, corrupt packages or a rogue user should never be able to crash the server.
+[] - worlds must reconnect to the meta-server after disconnection.
+[] - metaserver: dont check if the player is already connected
+[] - add stat attribute store on server
+[] - add stat attribute effects
+[] - add stat attribute protocols
+[] - create a string pool to support more languages.
+[] - 2d sound effects with DirectSound IdirectSound8, see reference.
+
+//2do
+[] - Add navigation in Views [Login, ServSelect, CharSelect] (same as system menu?) 
+[] - server: bounds checking for limiting static arrays, (account/char - engines) 
+[] - some launches are laggy
+[] - implement on client multiplayer HP, with minibars!
+[wip] - implement stat system!
+[wip] - implement level/exp
+[wip] - gui: get skillbar up
+[wip] - gui: get stat up
+[wip] - gui: get skilltree up
+[] - player auras with particle system!
+[] - make auras like fires, use pointers to players, when player leave must remove aura first.
+[] - dont process mouse events in GUI_Engine if the new property GUI_Engine.Visible.. 
+[] - use rendertargets in particle system, blend with eachother, then draw to background with beNormal.
+[] - reskin the keygen
+[] - diplay class data/info in charselect when hovering a class
+[wip] - implement life, death and respawn of characters-
+
+
+
+___dev_mem:
+client: 157 044, laptop: 153 936
+srv: 62 128

@@ -1,0 +1,5 @@
+- patcher does not load files post-download, check the filename of the file
+  that was recently completed.
+- patch speed is not correct.
+- patch speed is heavily reduced due to client having to poll single files.
+- patch speed should be normalized over 2-5 seconds.

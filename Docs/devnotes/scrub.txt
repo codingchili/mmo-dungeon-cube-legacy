@@ -1,0 +1,36 @@
+spell: revive
+request respawn from server.
+when logging on all spells are on cooldown. (prevent relogg hack)
+conditions should resume on relog.
+gui-menu was readded and the draggingleft on bug fixed
+patch should be able to remove files. "versions earlier than X" should remove file Y
+set edit character set!
+add input hint for character names.
+on receive spell packet, call textEngine to create * SpellName * .!
+broadcast spell packet to all in world
+on hit send the aID and not X,Y (flash screen when aID = self)
+in hit include the aID + max/current health.
+on hover player show bar, level, name, health
+send delta hp/energy to players not continous updates.
+when a in battle show basic attack line of missile.
+motd/notice show. - enable on Server.
+dont display "synchronized message on local synchronize, either dont synchronize to self. [check server mode!]
+client does not detect when server ip does not reply, at character select.
+fatal error 2151, socket error 10093
+run the server in debug mode.
+          { packet.action := TAction.Death; }{ packet.Add(IntToStr(hitlist[i].target));
+        packet.Add('Player Was Killed By Player2 Using ' + hitlist[i].spellname +  '.');
+        packet.Add(IntToStr($FFFF00CC)); }
+life and death of characters.
+experience and level up.
+map loading should unload last map. preserve ram.
+error: onley mage town works, the other maps wont UNLOAD!
+check the image format for differencies.
+
+later
+ area travel.
+
+cooldown, icon grayed out, frame goes from bottom up with color, changing from
+red->orange->yellow->green -> back to normal color.
+move prof selection buttons close so the prof-info wont flicker
+the last piece of charinfo should be at the top as banner

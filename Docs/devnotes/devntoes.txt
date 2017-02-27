@@ -1,0 +1,5 @@
+collision detection does not work at all, no damage is dealt no collisions!!!
+sometimes targeting targets junk memory (fixed? removing targeting)
+the client crashes often (fixed? removing targeting)
+projectiles should have a pointer to a spell?
+process hitlist in networking

@@ -1,0 +1,16 @@
+The Thief uses agility and shadows to evade their enemy, the common Thief can deal high amounts of damage in short 
+periods before backing off. Entering and leaving the battle to stay alive, traps, poison and drain.
+
+    Huntsman,
+      As a Thief you may play the huntsman game, you enjoy the woods and the animals within. Knows where to place traps
+      for maximum yield. The huntsman blends in the nature at night. May call for wolves at higher levels.
+
+    Assassin,
+      The assasin lurks in the shadows and moves in for the kill. The most mobile profession. Entering and leaving
+      stealth is what he does best. If you play the assasin style you will apply poisons and venoms with your shivs. 
+      The assasin may use backstab while in stealth, which deals bonus physical damage.
+
+    Marksman,
+      You have sharp sight, shooting many arrows for maximum damage. The marksman has less utility than the assassin 
+      and huntsman. The marksman makes up for lost agility with many types of arrows, shot in many different ways. If 
+      you play the thief as a marksman, you do well combining abilities from assasin or huntsman for more mobility.

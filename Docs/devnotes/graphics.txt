@@ -1,0 +1,13 @@
+- byta hårfärg/nagellacksfärg (vitt hår/nyanser)
+- byta ögonfärg(vit bild/nyanser)
+- hudfärg, filtrera kropp med färg
+- ett klädesplagg som kan ha alla färger
+- ett klädesplagg ska passa alla animationsrutor, för alla typer av spelargubbar
+- kropp i bakgrund, kläder ovanpå, kläder kan inte följa kroppen
+- magikern är en alv, med alväron :)
+- visa upp miniatyr på spelarkaraktär i karaktärsväljaren
+- visa knapp för att skapa ny karaktär i karaktärsväljaren
+- kunna ha fler karaktärer av samma sort
+- visa upp en stor bild av gubben när man skapar den
+- bakgrundsbild i menyerna, med stora gubbar som är animerade
+- 
